@@ -65,7 +65,13 @@ const formatDate = (dateString) => {
 .article-content :deep(img) {
   @apply rounded-lg shadow-md border border-gray-200 max-w-full h-auto my-6;
   @apply mx-auto block; /* Center images */
+
+  max-width: 800px;   /* max width of inline images */
+  max-height: 600px;  /* max height to keep images not too tall */
+  width: 100%;        /* scale down images on smaller screens */
+  height: auto;       /* keep aspect ratio */
 }
+
 
 .article-content :deep(h2) {
   @apply text-2xl font-bold mt-8 mb-4 text-gray-900;

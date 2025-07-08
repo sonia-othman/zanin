@@ -17,19 +17,17 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Grid;
 use Filament\Forms\Components\Section;
+use Filament\Forms\Components\RichEditor;
+use Filament\Forms\Components\TagsInput;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Filters\SelectFilter;
-use Mohamedsabil83\FilamentFormsTinyeditor\Components\TinyEditor;
 
 class ArticleResource extends Resource
 {
     protected static ?string $model = Article::class;
-
     protected static ?string $navigationIcon = 'heroicon-o-document-text';
-
     protected static ?string $navigationGroup = 'Content';
-
     protected static ?int $navigationSort = 1;
 
     public static function form(Form $form): Form
@@ -61,8 +59,8 @@ class ArticleResource extends Resource
                                 Select::make('category_id')
                                     ->relationship('category', 'name')
                                     ->required()
-                                    ->searchable()
                                     ->preload()
+                                    ->searchable(false)
                                     ->createOptionForm([
                                         TextInput::make('name')
                                             ->required()
@@ -78,25 +76,19 @@ class ArticleResource extends Resource
                                             ->rules(['alpha_dash']),
                                     ]),
 
-                                Select::make('tags')
-                                    ->relationship('tags', 'name')
-                                    ->multiple()
-                                    ->searchable()
-                                    ->preload()
-                                    ->createOptionForm([
-                                        TextInput::make('name')
-                                            ->required()
-                                            ->maxLength(255)
-                                            ->live(onBlur: true)
-                                            ->afterStateUpdated(fn ($state, callable $set) => 
-                                                $set('slug', Str::slug($state))
-                                            ),
-                                        TextInput::make('slug')
-                                            ->required()
-                                            ->maxLength(255)
-                                            ->unique(Tag::class, 'slug')
-                                            ->rules(['alpha_dash']),
-                                    ]),
+                                TagsInput::make('tags')
+                                    ->suggestions(Tag::pluck('name')->toArray())
+                                    ->splitKeys(['Enter', ','])
+                                    ->separator(',')
+                                    ->saveRelationshipsUsing(function ($record, $state) {
+                                        $record->tags()->sync(
+                                            collect($state)->map(function ($name) {
+                                                return Tag::firstOrCreate(['name' => $name], [
+                                                    'slug' => Str::slug($name),
+                                                ])->id;
+                                            })
+                                        );
+                                    }),
                             ]),
 
                         FileUpload::make('image')
@@ -116,18 +108,31 @@ class ArticleResource extends Resource
 
                 Section::make('Article Content')
                     ->schema([
-                        TinyEditor::make('content')
+                        RichEditor::make('content')
+                            ->required()
+                            ->columnSpanFull()
+                            ->toolbarButtons([
+                                'bold',
+                                'italic',
+                                'underline',
+                                'strike',
+                                'link',
+                                'bulletList',
+                                'orderedList',
+                                'blockquote',
+                                'codeBlock',
+                                'h2',
+                                'h3',
+                                'h4',
+                                'attachFiles',
+                            ])
                             ->fileAttachmentsDisk('public')
                             ->fileAttachmentsDirectory('articles/attachments')
                             ->fileAttachmentsVisibility('public')
-                            ->profile('default')
-                            ->required()
-                            ->columnSpanFull()
                             ->helperText('Write your article content here. You can format text, add images, and more.'),
                     ])
                     ->columns(1),
 
-                // Hidden field for user_id
                 Forms\Components\Hidden::make('user_id')
                     ->default(auth()->id()),
             ]);
@@ -196,9 +201,7 @@ class ArticleResource extends Resource
 
     public static function getRelations(): array
     {
-        return [
-            //
-        ];
+        return [];
     }
 
     public static function getPages(): array

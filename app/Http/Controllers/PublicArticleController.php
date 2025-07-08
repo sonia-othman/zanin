@@ -28,7 +28,7 @@ class PublicArticleController extends Controller
             ->where('slug', $slug)
             ->firstOrFail();
 
-        // Process the content to fix image paths for inline images
+        // Use the processed content attribute or process inline images
         $article->content = $this->processInlineImages($article->content);
 
         return Inertia::render('Articles/Show', [
@@ -40,13 +40,30 @@ class PublicArticleController extends Controller
     {
         if (!$content) return '';
         
-        // Fix image paths that don't already have /storage/ prefix
-        // This handles images uploaded through RichEditor's attachFiles
+        // Fix image paths for both TinyEditor and RichEditor uploads
         $content = preg_replace_callback(
             '/src="(?!http|https|\/storage\/|\/)(.*?)"/',
             function ($matches) {
                 // Add /storage/ prefix if the path doesn't already have it
                 return 'src="/storage/' . $matches[1] . '"';
+            },
+            $content
+        );
+
+        // Handle Filament RichEditor attachment format
+        $content = preg_replace_callback(
+            '/data-trix-attachment="([^"]*)"[^>]*><\/figure>/i',
+            function ($matches) {
+                // Extract filename from trix attachment data
+                $attachmentData = json_decode(html_entity_decode($matches[1]), true);
+                if (isset($attachmentData['url'])) {
+                    $url = $attachmentData['url'];
+                    if (!str_starts_with($url, 'http') && !str_starts_with($url, '/storage/')) {
+                        $url = '/storage/' . $url;
+                    }
+                    return '<img src="' . $url . '" alt="' . ($attachmentData['filename'] ?? '') . '">';
+                }
+                return $matches[0];
             },
             $content
         );
