@@ -6,8 +6,9 @@ use Illuminate\Database\Eloquent\Model;
 
 class Image extends Model
 {
-    public function article() {
-    return $this->belongsTo(Article::class);
-}
+    protected $fillable = ['path', 'article_id'];
 
+    public function article() {
+        return $this->belongsTo(Article::class);
+    }
 }
