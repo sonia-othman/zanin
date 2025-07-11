@@ -1,15 +1,17 @@
 <?php
-
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Laravel\Scout\Searchable;
 
 class Article extends Model
 {
-     protected $fillable = ['title', 'slug', 'content', 'image', 'category_id', 'user_id'];
+    use Searchable;
 
-    public function category() {
-        return $this->belongsTo(Category::class);
+    protected $fillable = ['title', 'slug', 'content', 'image', 'sub_category_id', 'user_id'];
+
+    public function subCategory() {
+        return $this->belongsTo(SubCategory::class);
     }
 
     public function tags() {
@@ -23,4 +25,30 @@ class Article extends Model
     public function user() {
         return $this->belongsTo(User::class);
     }
+
+    public function toSearchableArray()
+    {
+        return [
+            'title' => $this->title,
+        ];
+    }
+
+    public function searchableAs(): string
+    {
+        return 'articles';
+    }
+    // In Article.php
+public function category()
+{
+    return $this->hasOneThrough(
+        Category::class,
+        SubCategory::class,
+        'id',            // Foreign key on SubCategory table...
+        'id',            // Foreign key on Category table...
+        'sub_category_id',// Local key on Article table...
+        'category_id'     // Local key on SubCategory table...
+    );
+}
+
+    
 }

@@ -17,7 +17,7 @@ return new class extends Migration
         $table->string('slug')->unique();
         $table->longText('content');
         $table->string('image')->nullable();
-        $table->foreignId('category_id')->constrained()->onDelete('cascade');
+        $table->foreignId('sub_category_id')->constrained()->onDelete('cascade');
         $table->foreignId('user_id')->constrained()->onDelete('cascade'); // admin who added it
         $table->timestamps();
     });

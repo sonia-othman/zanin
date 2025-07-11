@@ -17,11 +17,14 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Grid;
 use Filament\Forms\Components\Section;
-use Filament\Forms\Components\RichEditor;
 use Filament\Forms\Components\TagsInput;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Filters\SelectFilter;
+
+// 🔥 Import TipTap Editor
+use FilamentTiptapEditor\TiptapEditor;
+use FilamentTiptapEditor\Enums\TiptapOutput;
 
 class ArticleResource extends Resource
 {
@@ -42,7 +45,7 @@ class ArticleResource extends Resource
                                     ->required()
                                     ->maxLength(255)
                                     ->live(onBlur: true)
-                                    ->afterStateUpdated(fn (string $context, $state, callable $set) => 
+                                    ->afterStateUpdated(fn (string $context, $state, callable $set) =>
                                         $context === 'create' ? $set('slug', Str::slug($state)) : null
                                     ),
 
@@ -57,39 +60,37 @@ class ArticleResource extends Resource
                         Grid::make(2)
                             ->schema([
                                 Select::make('category_id')
-                                    ->relationship('category', 'name')
+                                    ->label('Category')
+                                    ->options(Category::all()->pluck('name', 'id'))
                                     ->required()
-                                    ->preload()
-                                    ->searchable(false)
-                                    ->createOptionForm([
-                                        TextInput::make('name')
-                                            ->required()
-                                            ->maxLength(255)
-                                            ->live(onBlur: true)
-                                            ->afterStateUpdated(fn ($state, callable $set) => 
-                                                $set('slug', Str::slug($state))
-                                            ),
-                                        TextInput::make('slug')
-                                            ->required()
-                                            ->maxLength(255)
-                                            ->unique(Category::class, 'slug')
-                                            ->rules(['alpha_dash']),
-                                    ]),
-
-                                TagsInput::make('tags')
-                                    ->suggestions(Tag::pluck('name')->toArray())
-                                    ->splitKeys(['Enter', ','])
-                                    ->separator(',')
-                                    ->saveRelationshipsUsing(function ($record, $state) {
-                                        $record->tags()->sync(
-                                            collect($state)->map(function ($name) {
-                                                return Tag::firstOrCreate(['name' => $name], [
-                                                    'slug' => Str::slug($name),
-                                                ])->id;
-                                            })
-                                        );
-                                    }),
+                                    ->reactive()
+                                    ->afterStateUpdated(fn ($state, callable $set) => $set('sub_category_id', null))
+                                    ->dehydrated(false)
+                                    ->searchable(),
+                                
+                                Select::make('sub_category_id')
+                                    ->label('Subcategory')
+                                    ->required()
+                                    ->options(function (callable $get) {
+                                        $categoryId = $get('category_id');
+                                        return $categoryId ? \App\Models\SubCategory::where('category_id', $categoryId)->pluck('name', 'id') : [];
+                                    })
+                                    ->searchable(),
                             ]),
+
+                        TagsInput::make('tags')
+                            ->suggestions(Tag::pluck('name')->toArray())
+                            ->splitKeys(['Enter', ','])
+                            ->separator(',')
+                            ->saveRelationshipsUsing(function ($record, $state) {
+                                $record->tags()->sync(
+                                    collect($state)->map(function ($name) {
+                                        return Tag::firstOrCreate(['name' => $name], [
+                                            'slug' => Str::slug($name),
+                                        ])->id;
+                                    })
+                                );
+                            }),
 
                         FileUpload::make('image')
                             ->image()
@@ -108,28 +109,45 @@ class ArticleResource extends Resource
 
                 Section::make('Article Content')
                     ->schema([
-                        RichEditor::make('content')
+                        // 🔥 Replace RichEditor with TipTap Editor
+                        TiptapEditor::make('content')
                             ->required()
                             ->columnSpanFull()
-                            ->toolbarButtons([
+                            ->profile('default')
+                            ->tools([
+                                'heading',
+                                'bullet-list',
+                                'ordered-list',
+                                'checked-list',
+                                'blockquote',
+                                'hr',
+                                '|',
                                 'bold',
                                 'italic',
-                                'underline',
                                 'strike',
+                                'underline',
+                                'superscript',
+                                'subscript',
+                                'align-left',
+                                'align-center',
+                                'align-right',
+                                '|',
                                 'link',
-                                'bulletList',
-                                'orderedList',
-                                'blockquote',
-                                'codeBlock',
-                                'h2',
-                                'h3',
-                                'h4',
-                                'attachFiles',
+                                'media',
+                                'table', // 🎉 Table support!
+                                'grid',
+                                'grid-builder',
+                                '|',
+                                'code',
+                                'code-block',
+                                'source',
                             ])
-                            ->fileAttachmentsDisk('public')
-                            ->fileAttachmentsDirectory('articles/attachments')
-                            ->fileAttachmentsVisibility('public')
-                            ->helperText('Write your article content here. You can format text, add images, and more.'),
+                            ->disk('public')
+                            ->directory('articles/attachments')
+                            ->acceptedFileTypes(['image/jpeg', 'image/png', 'image/gif', 'image/webp'])
+                            ->maxFileSize(5120)
+                            ->output(TiptapOutput::Html)
+                            ->helperText('Write your article content here. Full table support and advanced formatting available.'),
                     ])
                     ->columns(1),
 
@@ -153,7 +171,7 @@ class ArticleResource extends Resource
                     ->weight('bold')
                     ->limit(40),
 
-                TextColumn::make('category.name')
+                TextColumn::make('subCategory.name')
                     ->badge()
                     ->color('primary')
                     ->searchable(),
@@ -175,8 +193,8 @@ class ArticleResource extends Resource
                     ->since(),
             ])
             ->filters([
-                SelectFilter::make('category')
-                    ->relationship('category', 'name')
+                SelectFilter::make('subCategory')
+                    ->relationship('subCategory', 'name')
                     ->searchable()
                     ->preload(),
 
@@ -221,5 +239,10 @@ class ArticleResource extends Resource
     public static function getGloballySearchableAttributes(): array
     {
         return ['title', 'content'];
+    }
+
+    public static function getEagerLoadRelations(): array
+    {
+        return ['subCategory', 'tags', 'user'];
     }
 }

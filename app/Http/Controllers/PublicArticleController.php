@@ -7,24 +7,36 @@ use Illuminate\Http\Request;
 use App\Models\Category;
 use Illuminate\Support\Facades\Cache;
 use Inertia\Inertia;
+use Laravel\Scout\Builder;
 
 class PublicArticleController extends Controller
 {
     public function index(Request $request)
     {
-        $articles = Article::with('category')
+        $search = $request->input('search');
+
+        $articles = Article::with('subCategory') // Load only subCategory
+            ->when($search, fn($query) =>
+                $query->where('title', 'like', '%' . $search . '%')
+            )
             ->latest()
             ->paginate(10)
             ->withQueryString();
+        
+        $categories = Category::all();
 
         return Inertia::render('Articles/Index', [
             'articles' => $articles,
+            'filters' => [
+                'search' => $search,
+            ],
+            'categories' => $categories,
         ]);
     }
 
     public function show($slug)
     {
-        $article = Article::with(['category', 'images'])
+        $article = Article::with(['category', 'subCategory', 'images']) // Add subCategory here too
             ->where('slug', $slug)
             ->firstOrFail();
 
@@ -34,6 +46,35 @@ class PublicArticleController extends Controller
         return Inertia::render('Articles/Show', [
             'article' => $article,
         ]);
+    }
+
+    public function search(Request $request)
+    {
+        $search = $request->input('q');
+
+        if (empty($search)) {
+            return redirect()->route('home');
+        }
+
+        $articles = Article::search($search)
+            ->paginate(10);
+
+        return Inertia::render('Articles/SearchResults', [
+            'articles' => $articles,
+            'search' => $search,
+        ]);
+    }
+
+    public function autocomplete(Request $request)
+    {
+        $search = $request->input('q');
+
+        $suggestions = Article::search($search)
+            ->take(5)
+            ->get()
+            ->pluck('title', 'slug');
+
+        return response()->json($suggestions);
     }
 
     private function processInlineImages($content)

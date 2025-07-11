@@ -20,9 +20,12 @@
     "dependencies": {
         "@inertiajs/inertia": "^0.11.1",
         "@inertiajs/vue3": "^2.0.14",
+        "@meilisearch/instant-meilisearch": "^0.27.0",
         "@tailwindcss/typography": "^0.5.16",
+        "instantsearch.js": "^4.79.1",
         "lucide-vue-next": "^0.525.0",
         "vue": "^3.5.17",
+        "vue-instantsearch": "^4.21.1",
         "ziggy-js": "^2.5.3"
     }
 }
