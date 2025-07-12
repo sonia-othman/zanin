@@ -20,10 +20,11 @@ class PublicArticleController extends Controller
                 $query->where('title', 'like', '%' . $search . '%')
             )
             ->latest()
-            ->paginate(10)
-            ->withQueryString();
+            ->take(10)  // Get only top 10 articles
+            ->get(); 
         
         $categories = Category::all();
+        $popularArticles = Article::orderByDesc('views')->take(5)->get();
 
         return Inertia::render('Articles/Index', [
             'articles' => $articles,
@@ -31,6 +32,8 @@ class PublicArticleController extends Controller
                 'search' => $search,
             ],
             'categories' => $categories,
+            'popularArticles' => $popularArticles, 
+
         ]);
     }
 
@@ -42,7 +45,7 @@ class PublicArticleController extends Controller
 
         // Use the processed content attribute or process inline images
         $article->content = $this->processInlineImages($article->content);
-
+        $article->increment('views'); 
         return Inertia::render('Articles/Show', [
             'article' => $article,
         ]);
