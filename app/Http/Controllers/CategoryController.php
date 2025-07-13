@@ -13,11 +13,9 @@ public function show($slug)
 {
     $category = Category::where('slug', $slug)->firstOrFail();
 
-    // Get all subcategory IDs in this category
     $subcategoryIds = $category->subCategories()->pluck('id');
 
-    // Get articles that have sub_category_id in those IDs
-    $articles = Article::with('category')  // Make sure 'category' relation exists (see below)
+    $articles = Article::with('category')  
         ->whereIn('sub_category_id', $subcategoryIds)
         ->latest()
         ->paginate(10)

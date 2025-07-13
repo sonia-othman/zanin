@@ -11,4 +11,12 @@ module.exports = {
   plugins: [
     require('@tailwindcss/typography'),
   ],
+  theme: {
+    extend: {
+      fontFamily: {
+        sans: ['Open Sans', 'sans-serif'],
+        rabar: ['Rabar_021', 'sans-serif'],
+      },
+    },
+  },
 }

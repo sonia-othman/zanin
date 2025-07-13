@@ -43,10 +43,10 @@ public function category()
     return $this->hasOneThrough(
         Category::class,
         SubCategory::class,
-        'id',            // Foreign key on SubCategory table...
-        'id',            // Foreign key on Category table...
-        'sub_category_id',// Local key on Article table...
-        'category_id'     // Local key on SubCategory table...
+        'id',            
+        'id',           
+        'sub_category_id',
+        'category_id'     
     );
 }
 

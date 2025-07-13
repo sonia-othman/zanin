@@ -2,8 +2,29 @@
   <header class="bg-white text-black shadow-lg">
     <div class="container mx-auto px-4 py-4">
       <div class="flex items-center justify-between">
-        <!-- Left (empty for spacing) -->
-        <div class="w-1/3"></div>
+        <!-- Left: Hamburger Menu (Mobile only) -->
+        <div class="w-1/3 md:w-1/3">
+          <button
+            @click="toggleMobileMenu"
+            class="md:hidden p-2 text-black hover:text-gray-600 transition"
+            aria-label="Toggle mobile menu"
+          >
+            <svg
+              class="w-6 h-6"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M4 6h16M4 12h16M4 18h16"
+              />
+            </svg>
+          </button>
+        </div>
 
         <!-- Center: Logo Image -->
         <div class="w-1/3 flex justify-center">
@@ -60,17 +81,124 @@
         </div>
       </div>
     </div>
+
+    <!-- Mobile Menu Overlay -->
+    <div
+      v-if="showMobileMenu"
+      class="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden"
+      @click="closeMobileMenu"
+    />
+
+    <!-- Mobile Menu Sidebar -->
+    <div
+      :class="[
+        'fixed top-0 left-0 h-full w-80 bg-white shadow-lg z-50 transform transition-transform duration-300 ease-in-out md:hidden',
+        showMobileMenu ? 'translate-x-0' : '-translate-x-full'
+      ]"
+    >
+      <!-- Mobile Menu Header -->
+      <div class="flex items-center justify-between p-4 border-b">
+        <h2 class="text-xl font-semibold">Menu</h2>
+        <button
+          @click="closeMobileMenu"
+          class="p-2 text-gray-600 hover:text-gray-800"
+          aria-label="Close menu"
+        >
+          <svg
+            class="w-6 h-6"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M6 18L18 6M6 6l12 12"
+            />
+          </svg>
+        </button>
+      </div>
+
+      <!-- Mobile Menu Content -->
+      <div class="p-4 overflow-y-auto h-full">
+        <h3 class="text-lg font-semibold mb-4 text-gray-900">Categories</h3>
+        
+        <div class="space-y-4">
+          <div v-for="category in categories" :key="category.id">
+            <details class="group [&_summary::-webkit-details-marker]:hidden">
+              <summary
+                class="flex justify-between items-center cursor-pointer text-gray-800 font-medium hover:text-blue-600 select-none px-2 py-2 rounded-md transition-colors"
+              >
+                <span>{{ category.name }}</span>
+                <svg
+                  class="w-4 h-4 text-gray-400 group-open:rotate-90 transition-transform duration-300"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  viewBox="0 0 24 24"
+                >
+                  <path d="M9 5l7 7-7 7"></path>
+                </svg>
+              </summary>
+
+              <div class="mt-2 ml-4 space-y-3">
+                <div v-for="sub in category.sub_categories" :key="sub.id">
+                  <details class="group [&_summary::-webkit-details-marker]:hidden">
+                    <summary
+                      class="flex justify-between items-center cursor-pointer text-gray-700 hover:text-blue-500 select-none px-2 py-1 rounded-md transition-colors"
+                    >
+                      <span>{{ sub.name }}</span>
+                      <svg
+                        class="w-3 h-3 text-gray-400 group-open:rotate-90 transition-transform duration-300"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        viewBox="0 0 24 24"
+                      >
+                        <path d="M9 5l7 7-7 7"></path>
+                      </svg>
+                    </summary>
+
+                    <div class="mt-2 ml-4 space-y-2">
+                      <Link
+                        v-for="article in sub.articles"
+                        :key="article.id"
+                        :href="route('articles.show', article.slug)"
+                        class="block text-gray-600 hover:text-blue-600 transition-colors py-1 px-2 rounded"
+                        @click="closeMobileMenu"
+                      >
+                        {{ article.title }}
+                      </Link>
+                    </div>
+                  </details>
+                </div>
+              </div>
+            </details>
+          </div>
+        </div>
+      </div>
+    </div>
   </header>
 </template>
 
 <script setup>
 import { ref, watch, nextTick } from 'vue'
-import { Link, router } from '@inertiajs/vue3'
+import { Link, router, usePage } from '@inertiajs/vue3'
 import { Search } from 'lucide-vue-next'
+import { route } from 'ziggy-js'
+
+const page = usePage()
+const categories = page.props.categories || []
 
 const showSearch = ref(false)
 const searchQuery = ref('')
 const searchInput = ref(null)
+const showMobileMenu = ref(false)
 
 function toggleSearch() {
   showSearch.value = !showSearch.value
@@ -87,6 +215,21 @@ function performSearch() {
     router.visit(`/search?q=${encodeURIComponent(searchQuery.value)}`)
   }
 }
+
+function toggleMobileMenu() {
+  showMobileMenu.value = !showMobileMenu.value
+}
+
+function closeMobileMenu() {
+  showMobileMenu.value = false
+}
+
+// Close mobile menu when clicking outside or pressing escape
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && showMobileMenu.value) {
+    closeMobileMenu()
+  }
+})
 </script>
 
 <style>
@@ -98,5 +241,10 @@ function performSearch() {
 .fade-enter-from,
 .fade-leave-to {
   opacity: 0;
+}
+
+/* Prevent body scroll when mobile menu is open */
+body.mobile-menu-open {
+  overflow: hidden;
 }
 </style>

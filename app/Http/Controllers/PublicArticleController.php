@@ -15,19 +15,21 @@ class PublicArticleController extends Controller
     {
         $search = $request->input('search');
 
-        $articles = Article::with('subCategory') // Load only subCategory
+        $articles = Article::with('subCategory')
             ->when($search, fn($query) =>
                 $query->where('title', 'like', '%' . $search . '%')
             )
             ->latest()
-            ->take(10)  // Get only top 10 articles
-            ->get(); 
-        
-        $categories = Category::all();
+            ->paginate(10)
+            ->withQueryString();
+
+        $recentArticles = Article::latest()->take(5)->get();
+$categories = Category::with(['subCategories.articles'])->get();
         $popularArticles = Article::orderByDesc('views')->take(5)->get();
 
         return Inertia::render('Articles/Index', [
             'articles' => $articles,
+            
             'filters' => [
                 'search' => $search,
             ],

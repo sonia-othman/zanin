@@ -114,7 +114,7 @@
             {{ article.excerpt }}
           </p>
 
-          <div class="flex items-center text-sm text-gray-500 justify-between">
+          <div class="flex justify-end text-sm text-gray-500 ">
             <time v-if="article.created_at" :datetime="article.created_at">
               {{ formatDate(article.created_at) }}
             </time>
