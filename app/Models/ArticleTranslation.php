@@ -3,9 +3,9 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class Image extends Model
+class ArticleTranslation extends Model
 {
-    protected $fillable = ['path', 'language', 'article_id'];
+    protected $fillable = ['article_id', 'language', 'title', 'content'];
 
     public function article()
     {

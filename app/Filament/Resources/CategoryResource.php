@@ -12,6 +12,8 @@ use Filament\Tables\Table;
 use Illuminate\Support\Str;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Grid;
+use Filament\Forms\Components\Tabs;
+use Filament\Forms\Components\Tabs\Tab;
 use Filament\Tables\Columns\TextColumn;
 
 class CategoryResource extends Resource
@@ -30,14 +32,6 @@ class CategoryResource extends Resource
             ->schema([
                 Grid::make(2)
                     ->schema([
-                        TextInput::make('name')
-                            ->required()
-                            ->maxLength(255)
-                            ->live(onBlur: true)
-                            ->afterStateUpdated(fn (string $context, $state, callable $set) => 
-                                $context === 'create' ? $set('slug', Str::slug($state)) : null
-                            ),
-
                         TextInput::make('slug')
                             ->required()
                             ->maxLength(255)
@@ -45,6 +39,29 @@ class CategoryResource extends Resource
                             ->rules(['alpha_dash'])
                             ->helperText('URL-friendly version of the name'),
                     ]),
+
+                Tabs::make('Translations')
+                    ->tabs([
+                        Tab::make('English')
+                            ->schema([
+                                TextInput::make('name_en')
+                                    ->label('Name (EN)')
+                                    ->required()
+                                    ->maxLength(255)
+                                    ->live(onBlur: true)
+                                    ->afterStateUpdated(fn (string $context, $state, callable $set) =>
+                                        $context === 'create' ? $set('slug', Str::slug($state)) : null
+                                    ),
+                            ]),
+                        Tab::make('Kurdish')
+                            ->schema([
+                                TextInput::make('name_ku')
+                                    ->label('Name (KU)')
+                                    ->required()
+                                    ->maxLength(255),
+                            ]),
+                    ])
+                    ->columnSpanFull(),
             ]);
     }
 
@@ -52,10 +69,12 @@ class CategoryResource extends Resource
     {
         return $table
             ->columns([
-                TextColumn::make('name')
-                    ->searchable()
-                    ->sortable()
-                    ->weight('bold'),
+                TextColumn::make('translation.name')
+                ->label('Name (EN)')
+                ->sortable()
+                ->searchable() // simple true, no closure
+                ->getStateUsing(fn ($record) => $record->translation('en')->name ?? ''),
+
 
                 TextColumn::make('slug')
                     ->searchable()
@@ -72,9 +91,6 @@ class CategoryResource extends Resource
                     ->sortable()
                     ->since(),
             ])
-            ->filters([
-                //
-            ])
             ->actions([
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make(),
@@ -85,6 +101,11 @@ class CategoryResource extends Resource
                 ]),
             ])
             ->defaultSort('name', 'asc');
+    }
+
+    public static function getRelations(): array
+    {
+        return [];
     }
 
     public static function getPages(): array

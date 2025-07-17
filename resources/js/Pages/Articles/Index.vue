@@ -60,7 +60,7 @@
             class="min-h-[160px] flex items-center justify-center cursor-pointer rounded-xl shadow-sm text-white p-6 text-center hover:scale-105 transform transition duration-300"
             :class="'bg-gradient-to-b ' + getGradient(category.id)"
           >
-            <span class="text-2xl font-medium">{{ category.name }}</span>
+<span class="text-2xl font-medium">{{ category.translation?.name || category.name }}</span>
           </div>
       </div>
     </section>
@@ -76,7 +76,7 @@
               class="block bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow w-full group"
             >
               <h3 class="text-xl font-semibold text-gray-900 group-hover:text-blue-600 transition-colors mb-2">
-                {{ article.title }}
+{{ article.translation?.title || article.title }}
               </h3>
 
               <p v-if="article.excerpt" class="text-gray-600 mb-4">
@@ -107,12 +107,12 @@
           class="block bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow w-full group"
         >
           <h3 class="text-xl font-semibold text-gray-900 group-hover:text-blue-600 transition-colors mb-2">
-            {{ article.title }}
-          </h3>
+  {{ article.translation?.title || article.title }}
+</h3>
 
-          <p v-if="article.excerpt" class="text-gray-600 mb-4">
-            {{ article.excerpt }}
-          </p>
+          <p v-if="article.translation?.excerpt" class="text-gray-600 mb-4">
+  {{ article.translation?.excerpt }}
+</p>
 
           <div class="flex justify-end text-sm text-gray-500 ">
             <time v-if="article.created_at" :datetime="article.created_at">

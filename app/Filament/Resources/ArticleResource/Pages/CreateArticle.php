@@ -2,11 +2,34 @@
 
 namespace App\Filament\Resources\ArticleResource\Pages;
 
-use App\Filament\Resources\ArticleResource;
-use Filament\Actions;
+use App\Models\ArticleTranslation;
 use Filament\Resources\Pages\CreateRecord;
+use App\Filament\Resources\ArticleResource;
 
 class CreateArticle extends CreateRecord
 {
     protected static string $resource = ArticleResource::class;
+
+    protected function afterCreate(): void
+    {
+        $this->saveTranslations();
+    }
+
+    protected function saveTranslations(): void
+    {
+        $data = $this->form->getState();
+
+        foreach (['en', 'ku'] as $lang) {
+            ArticleTranslation::updateOrCreate(
+                [
+                    'article_id' => $this->record->id,
+                    'language' => $lang,
+                ],
+                [
+                    'title' => $data["title_{$lang}"],
+                    'content' => $data["content_{$lang}"],
+                ]
+            );
+        }
+    }
 }

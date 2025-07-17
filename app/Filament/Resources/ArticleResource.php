@@ -6,6 +6,7 @@ use App\Filament\Resources\ArticleResource\Pages;
 use App\Models\Article;
 use App\Models\Category;
 use App\Models\Tag;
+use App\Models\SubCategory;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -18,11 +19,11 @@ use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Grid;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\TagsInput;
+use Filament\Forms\Components\Tabs;
+use Filament\Forms\Components\Tabs\Tab;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Filters\SelectFilter;
-
-// 🔥 Import TipTap Editor
 use FilamentTiptapEditor\TiptapEditor;
 use FilamentTiptapEditor\Enums\TiptapOutput;
 
@@ -41,14 +42,6 @@ class ArticleResource extends Resource
                     ->schema([
                         Grid::make(2)
                             ->schema([
-                                TextInput::make('title')
-                                    ->required()
-                                    ->maxLength(255)
-                                    ->live(onBlur: true)
-                                    ->afterStateUpdated(fn (string $context, $state, callable $set) =>
-                                        $context === 'create' ? $set('slug', Str::slug($state)) : null
-                                    ),
-
                                 TextInput::make('slug')
                                     ->required()
                                     ->maxLength(255)
@@ -56,27 +49,34 @@ class ArticleResource extends Resource
                                     ->rules(['alpha_dash'])
                                     ->helperText('URL-friendly version of the title'),
                             ]),
-
-                        Grid::make(2)
-                            ->schema([
-                                Select::make('category_id')
-                                    ->label('Category')
-                                    ->options(Category::all()->pluck('name', 'id'))
-                                    ->required()
-                                    ->reactive()
-                                    ->afterStateUpdated(fn ($state, callable $set) => $set('sub_category_id', null))
-                                    ->dehydrated(false)
-                                    ->searchable(),
-                                
-                                Select::make('sub_category_id')
-                                    ->label('Subcategory')
-                                    ->required()
-                                    ->options(function (callable $get) {
-                                        $categoryId = $get('category_id');
-                                        return $categoryId ? \App\Models\SubCategory::where('category_id', $categoryId)->pluck('name', 'id') : [];
-                                    })
-                                    ->searchable(),
-                            ]),
+                          
+                            Select::make('sub_category_id')
+                                ->label('Subcategory')
+                                ->required()
+                                ->options(function () {
+                                    return SubCategory::with([
+                                        'category' => function ($query) {
+                                            $query->with(['translations' => function ($q) {
+                                                $q->where('language', 'en');
+                                            }]);
+                                        },
+                                        'translations' => function ($query) {
+                                            $query->where('language', 'en');
+                                        }
+                                    ])
+                                    ->get()
+                                    ->mapWithKeys(function ($sub) {
+                                        // Get category name using the name() method
+                                        $categoryName = $sub->category?->name('en') ?? 'Unknown Category';
+                                        
+                                        // Get subcategory name using the name() method
+                                        $subName = $sub->name('en') ?? 'Unknown Subcategory';
+                                        
+                                        return [$sub->id => "{$categoryName} > {$subName}"];
+                                    });
+                                })
+                                ->searchable()
+                                ->preload(),
 
                         TagsInput::make('tags')
                             ->suggestions(Tag::pluck('name')->toArray())
@@ -97,63 +97,60 @@ class ArticleResource extends Resource
                             ->directory('articles')
                             ->disk('public')
                             ->imageEditor()
-                            ->imageEditorAspectRatios([
-                                '16:9',
-                                '4:3',
-                                '1:1',
-                            ])
+                            ->imageEditorAspectRatios(['16:9', '4:3', '1:1'])
                             ->maxSize(5120)
                             ->helperText('Featured image for the article (max 5MB)'),
                     ])
                     ->columns(1),
 
-                Section::make('Article Content')
+                Section::make('Multilingual Content')
                     ->schema([
-                        // 🔥 Replace RichEditor with TipTap Editor
-                        TiptapEditor::make('content')
-                            ->required()
-                            ->columnSpanFull()
-                            ->profile('default')
-                            ->tools([
-                                'heading',
-                                'bullet-list',
-                                'ordered-list',
-                                'checked-list',
-                                'blockquote',
-                                'hr',
-                                '|',
-                                'bold',
-                                'italic',
-                                'strike',
-                                'underline',
-                                'superscript',
-                                'subscript',
-                                'align-left',
-                                'align-center',
-                                'align-right',
-                                '|',
-                                'link',
-                                'media',
-                                'table', // 🎉 Table support!
-                                'grid',
-                                'grid-builder',
-                                '|',
-                                'code',
-                                'code-block',
-                                'source',
+                        Tabs::make('Translations')
+                            ->tabs([
+                                Tab::make('English')
+                                    ->schema([
+                                        TextInput::make('title_en')
+                                            ->label('Title (EN)')
+                                            ->required()
+                                            ->maxLength(255)
+                                            ->live(onBlur: true)
+                                            ->afterStateUpdated(fn (string $context, $state, callable $set) =>
+                                                $context === 'create' ? $set('slug', Str::slug($state)) : null
+                                            ),
+
+                                        TiptapEditor::make('content_en')
+                                            ->label('Content (EN)')
+                                            ->required()
+                                            ->columnSpanFull()
+                                            ->profile('default')
+                                            ->disk('public')
+                                            ->directory('articles/attachments')
+                                            ->output(TiptapOutput::Html),
+                                    ]),
+                                Tab::make('Kurdish')
+                                    ->schema([
+                                        TextInput::make('title_ku')
+                                            ->label('Title (KU)')
+                                            ->required()
+                                            ->maxLength(255),
+
+                                        TiptapEditor::make('content_ku')
+                                            ->label('Content (KU)')
+                                            ->required()
+                                            ->columnSpanFull()
+                                            ->profile('default')
+                                            ->disk('public')
+                                            ->directory('articles/attachments')
+                                            ->output(TiptapOutput::Html),
+                                    ]),
                             ])
-                            ->disk('public')
-                            ->directory('articles/attachments')
-                            ->acceptedFileTypes(['image/jpeg', 'image/png', 'image/gif', 'image/webp'])
-                            ->maxFileSize(5120)
-                            ->output(TiptapOutput::Html)
-                            ->helperText('Write your article content here. Full table support and advanced formatting available.'),
-                    ])
-                    ->columns(1),
+                            ->columnSpanFull(),
+                    ]),
 
                 Forms\Components\Hidden::make('user_id')
                     ->default(auth()->id()),
-            ]);
+            ])
+            ->columns(1);
     }
 
     public static function table(Table $table): Table
@@ -165,16 +162,15 @@ class ArticleResource extends Resource
                     ->size(60)
                     ->circular(),
 
-                TextColumn::make('title')
-                    ->searchable()
-                    ->sortable()
-                    ->weight('bold')
-                    ->limit(40),
+                TextColumn::make('translations.title')
+                ->label('Title (EN)')
+                ->sortable()
+                ->searchable('searchTitle')  // <-- Use the scope method name here
+                ->getStateUsing(fn ($record) => $record->translation('en')->title ?? ''),
 
                 TextColumn::make('subCategory.name')
                     ->badge()
-                    ->color('primary')
-                    ->searchable(),
+                    ->color('primary'),
 
                 TextColumn::make('tags.name')
                     ->badge()
@@ -183,9 +179,7 @@ class ArticleResource extends Resource
                     ->limit(20),
 
                 TextColumn::make('user.name')
-                    ->label('Author')
-                    ->sortable()
-                    ->searchable(),
+                    ->label('Author'),
 
                 TextColumn::make('created_at')
                     ->dateTime()
@@ -193,10 +187,28 @@ class ArticleResource extends Resource
                     ->since(),
             ])
             ->filters([
-                SelectFilter::make('subCategory')
-                    ->relationship('subCategory', 'name')
-                    ->searchable()
-                    ->preload(),
+              SelectFilter::make('sub_category_id')
+                ->label('Subcategory')
+                ->options(function () {
+                    return SubCategory::with([
+                        'category' => function ($query) {
+                            $query->with(['translations' => function ($q) {
+                                $q->where('language', 'en');
+                            }]);
+                        },
+                        'translations' => function ($query) {
+                            $query->where('language', 'en');
+                        }
+                    ])
+                    ->get()
+                    ->mapWithKeys(function ($sub) {
+                        $categoryName = $sub->category?->name('en') ?? 'Unknown Category';
+                        $subName = $sub->name('en') ?? 'Unknown Subcategory';
+                        return [$sub->id => "{$categoryName} > {$subName}"];
+                    });
+                })
+                ->searchable()
+                ->preload(),
 
                 SelectFilter::make('tags')
                     ->relationship('tags', 'name')
@@ -238,11 +250,11 @@ class ArticleResource extends Resource
 
     public static function getGloballySearchableAttributes(): array
     {
-        return ['title', 'content'];
+        return ['slug'];
     }
 
     public static function getEagerLoadRelations(): array
     {
-        return ['subCategory', 'tags', 'user'];
+        return ['translations', 'subCategory', 'tags', 'user'];
     }
 }

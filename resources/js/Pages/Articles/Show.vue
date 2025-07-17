@@ -4,7 +4,7 @@
       <article class="w-full md:w-2/3 bg-white rounded-lg p-8"> <!-- Removed border and shadow -->
         <header class="mb-8">
           <h1 class="text-4xl font-bold text-gray-900 mb-4">
-            {{ article.title }}
+{{ article.translation?.title || article.title }}
           </h1>
 
           <div class="flex items-center text-sm text-gray-500 mb-6">
@@ -22,12 +22,12 @@
           <img 
             :src="'/storage/' + article.image" 
             :alt="article.title"
-            class="w-full h-64 object-cover rounded-lg" <!-- removed border and shadow -->
+            class="w-full h-64 object-cover rounded-lg" 
           />
         </div>
 
         <!-- Rich editor content with inline images -->
-        <div class="prose prose-lg prose-slate max-w-none article-content" v-html="article.content"></div>
+<div class="prose prose-lg prose-slate max-w-none article-content" v-html="article.translation?.content || article.content"></div>
       </article>
     </div>
 

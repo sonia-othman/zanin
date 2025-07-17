@@ -12,11 +12,13 @@ return new class extends Migration
    public function up()
 {
     Schema::create('images', function (Blueprint $table) {
-        $table->id();
-        $table->string('path');
-        $table->foreignId('article_id')->nullable()->constrained()->onDelete('cascade');
-        $table->timestamps();
-    });
+    $table->id();
+    $table->string('path');
+    $table->string('language', 5);  // 'en', 'ku', 'ar', etc.
+    $table->foreignId('article_id')->nullable()->constrained()->onDelete('cascade');
+    $table->timestamps();
+});
+
 }
 
 

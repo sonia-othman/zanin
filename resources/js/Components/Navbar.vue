@@ -33,18 +33,16 @@
           </Link>
         </div>
 
-        <!-- Right: Search Input with icons -->
-        <div class="w-1/3 flex justify-end items-center">
+        <!-- Right: Search Input and Language Switcher -->
+        <div class="w-1/3 flex justify-end items-center space-x-4">
+          <!-- Search functionality -->
           <transition name="fade">
             <div
               v-if="showSearch"
               class="relative"
               style="width: 200px;"
             >
-              <!-- Search icon inside input (left) -->
               <Search class="w-5 h-5 text-black absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-
-              <!-- Input -->
               <input
                 v-model="searchQuery"
                 type="text"
@@ -53,8 +51,6 @@
                 @keydown.enter="performSearch"
                 ref="searchInput"
               />
-
-              <!-- X icon to close (right) -->
               <button
                 @click="toggleSearch"
                 class="absolute right-1 top-1/2 -translate-y-1/2 text-black hover:text-gray-600"
@@ -74,10 +70,21 @@
             </div>
           </transition>
 
-          <!-- Show search icon button when input is closed -->
           <button v-if="!showSearch" @click="toggleSearch">
             <Search class="w-8 h-6 text-black hover:text-gray-600 transition" />
           </button>
+
+          <!-- Language Switcher Dropdown -->
+          <select
+            v-model="selectedLang"
+            @change="changeLanguage"
+            class="border border-gray-300 rounded px-2 py-1 text-black cursor-pointer"
+            aria-label="Select Language"
+          >
+            <option value="en">English</option>
+            <option value="ar">العربية</option>
+            <option value="ku">کوردی</option>
+          </select>
         </div>
       </div>
     </div>
@@ -130,7 +137,7 @@
               <summary
                 class="flex justify-between items-center cursor-pointer text-gray-800 font-medium hover:text-blue-600 select-none px-2 py-2 rounded-md transition-colors"
               >
-                <span>{{ category.name }}</span>
+                <span>{{ getCategoryName(category) }}</span>
                 <svg
                   class="w-4 h-4 text-gray-400 group-open:rotate-90 transition-transform duration-300"
                   fill="none"
@@ -150,7 +157,7 @@
                     <summary
                       class="flex justify-between items-center cursor-pointer text-gray-700 hover:text-blue-500 select-none px-2 py-1 rounded-md transition-colors"
                     >
-                      <span>{{ sub.name }}</span>
+                      <span>{{ getSubCategoryName(sub) }}</span>
                       <svg
                         class="w-3 h-3 text-gray-400 group-open:rotate-90 transition-transform duration-300"
                         fill="none"
@@ -172,7 +179,7 @@
                         class="block text-gray-600 hover:text-blue-600 transition-colors py-1 px-2 rounded"
                         @click="closeMobileMenu"
                       >
-                        {{ article.title }}
+                        {{ getArticleTitle(article) }}
                       </Link>
                     </div>
                   </details>
@@ -187,23 +194,63 @@
 </template>
 
 <script setup>
-import { ref, watch, nextTick } from 'vue'
+import { ref, watch, nextTick, computed } from 'vue'
 import { Link, router, usePage } from '@inertiajs/vue3'
 import { Search } from 'lucide-vue-next'
 import { route } from 'ziggy-js'
 
 const page = usePage()
-const categories = page.props.categories || []
+const categories = computed(() => page.props.categories || [])
+const currentLocale = computed(() => page.props.locale || 'en')
 
 const showSearch = ref(false)
 const searchQuery = ref('')
 const searchInput = ref(null)
 const showMobileMenu = ref(false)
 
+const selectedLang = ref(currentLocale.value)
+
+// Watch for locale changes and update selectedLang
+watch(currentLocale, (newLocale) => {
+  selectedLang.value = newLocale
+})
+
+// Helper functions to get translated names
+function getCategoryName(category) {
+  return category.translation?.name || category.name || 'Untitled Category'
+}
+
+function getSubCategoryName(subCategory) {
+  return subCategory.translation?.name || subCategory.name || 'Untitled Subcategory'
+}
+
+function getArticleTitle(article) {
+  return article.translation?.title || article.title || 'Untitled Article'
+}
+
+// Replace the changeLanguage function in your Navbar.vue script section:
+
+function changeLanguage() {
+  if (selectedLang.value !== currentLocale.value) {
+    // Use Inertia's router.visit with full page reload
+    router.visit(`/lang/${selectedLang.value}`, {
+      method: 'get',
+      preserveScroll: false,
+      preserveState: false,
+      replace: false,
+      onSuccess: () => {
+        console.log('Language changed successfully to:', selectedLang.value)
+      },
+      onError: (errors) => {
+        console.error('Language change failed:', errors)
+      }
+    })
+  }
+}
+
 function toggleSearch() {
   showSearch.value = !showSearch.value
   if (showSearch.value) {
-    // Focus input when it shows
     nextTick(() => {
       searchInput.value?.focus()
     })
@@ -224,7 +271,7 @@ function closeMobileMenu() {
   showMobileMenu.value = false
 }
 
-// Close mobile menu when clicking outside or pressing escape
+// Close mobile menu on escape key
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape' && showMobileMenu.value) {
     closeMobileMenu()
@@ -233,7 +280,6 @@ document.addEventListener('keydown', (e) => {
 </script>
 
 <style>
-/* Fade transition for input */
 .fade-enter-active,
 .fade-leave-active {
   transition: opacity 0.3s ease;
@@ -241,10 +287,5 @@ document.addEventListener('keydown', (e) => {
 .fade-enter-from,
 .fade-leave-to {
   opacity: 0;
-}
-
-/* Prevent body scroll when mobile menu is open */
-body.mobile-menu-open {
-  overflow: hidden;
 }
 </style>

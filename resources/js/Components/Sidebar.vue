@@ -9,7 +9,7 @@
           <summary
             class="flex justify-between items-center cursor-pointer text-gray-800 font-semibold hover:text-blue-600 select-none px-1 py-2 rounded-md transition-colors"
           >
-            <span>{{ category.name }}</span>
+            <span>{{ category.translation?.name || category.name || 'Unnamed Category' }}</span>
             <svg
               class="w-5 h-5 text-gray-400 group-open:rotate-90 transition-transform duration-300"
               fill="none"
@@ -25,12 +25,12 @@
           </summary>
 
           <ul class="mt-3 ml-5 border-l border-gray-300 pl-4 space-y-4">
-            <li v-for="sub in category.sub_categories" :key="sub.id">
+            <li v-for="sub in category.subCategories" :key="sub.id">
               <details class="group [&_summary::-webkit-details-marker]:hidden">
                 <summary
                   class="flex justify-between items-center cursor-pointer text-gray-700 font-medium hover:text-blue-500 select-none px-1 py-1 rounded-md transition-colors"
                 >
-                  <span>{{ sub.name }}</span>
+                  <span>{{ sub.translation?.name || sub.name || 'Unnamed Subcategory' }}</span>
                   <svg
                     class="w-4 h-4 text-gray-400 group-open:rotate-90 transition-transform duration-300"
                     fill="none"
@@ -51,7 +51,7 @@
                       :href="route('articles.show', article.slug)"
                       class="block text-gray-600 hover:text-blue-600 transition-colors"
                     >
-                      {{ article.title }}
+                      {{ article.translation?.title || article.title || 'Untitled Article' }}
                     </Link>
                   </li>
                 </ul>

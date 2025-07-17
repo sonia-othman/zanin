@@ -1,13 +1,33 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
 /* Rabar_021 font (for Arabic/Kurdish) */
 @font-face {
   font-family: 'Rabar_021';
   src: url('/fonts/Rabar_021.ttf') format('truetype');
   font-weight: normal;
   font-style: normal;
+  font-display: swap; /* Add this for better loading */
 }
 
 /* Open Sans from Google Fonts (for English) */
 @import url('https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&display=swap');
+
+/* Add fallback styles */
+.font-rabar {
+  font-family: 'Rabar_021', 'Arial', sans-serif;
+}
+
+.font-sans {
+  font-family: 'Open Sans', 'Arial', sans-serif;
+}
+
+/* Debug styles - remove after fixing */
+.font-rabar * {
+  font-family: 'Rabar_021', 'Arial', sans-serif !important;
+}
+
+.font-sans * {
+  font-family: 'Open Sans', 'Arial', sans-serif !important;
+}
