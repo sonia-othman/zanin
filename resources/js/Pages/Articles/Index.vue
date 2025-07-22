@@ -3,8 +3,8 @@
     <!-- Search Hero Section -->
     <section class="bg-gradient-to-b from-blue-400 via-blue-200 to-white text-white py-20">
       <div class="container mx-auto text-center px-4">
-        <h1 class="text-4xl md:text-6xl font-bold mb-6">Search Articles Easily</h1>
-        <p class="text-lg md:text-xl mb-8">Find tutorials, news, and tips</p>
+        <h1 class="text-4xl md:text-6xl font-bold mb-6">{{ $t('index.searchTitle') }}</h1>
+        <p class="text-lg md:text-xl mb-8">{{ $t('index.searchDescription') }}</p>
 
         <div class="relative max-w-4xl mx-auto">
           <!-- Search Input -->
@@ -12,7 +12,7 @@
             <input
               type="text"
               v-model="search"
-              placeholder="Search articles..."
+              :placeholder="$t('search.placeholder')"
               class="w-full px-6 py-3 text-gray-700 focus:outline-none"
               @keyup.enter="submitSearch"
               @blur="hideSuggestions"
@@ -22,13 +22,13 @@
               @click="submitSearch"
               class="bg-blue-400 text-white px-6 py-3 font-semibold hover:bg-blue-600"
             >
-              Search
+               {{ $t('search.name') }}
             </button>
           </div>
 
           <!-- Loading -->
           <div v-if="loading" class="absolute left-0 right-0 z-50 bg-white rounded-lg shadow-lg mt-2 text-center py-2">
-            <span class="text-gray-500">Loading...</span>
+            <span class="text-gray-500">{{ $t('common.loading') }}</span>
           </div>
 
           <!-- Suggestions -->
@@ -51,7 +51,7 @@
 
     <!-- Categories Section -->
     <section class="container mx-auto px-4 py-12">
-      <h2 class="text-3xl font-bold mb-8 text-gray-900 text-center">Categories</h2>
+      <h2 class="text-3xl font-bold mb-8 text-gray-900 text-center">{{ $t('categories.title') }}</h2>
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-8 justify-center max-w-4xl mx-auto">
           <div
             v-for="category in categories"
@@ -67,7 +67,7 @@
 
         <!-- Most Viewed Articles -->
         <section class="container mx-auto px-4 py-12">
-          <h2 class="text-3xl font-bold mb-8 text-gray-900 text-center"> Most Viewed Articles</h2>
+          <h2 class="text-3xl font-bold mb-8 text-gray-900 text-center">{{ $t('index.mostViewed') }}</h2>
         <div class="grid grid-cols-1 gap-8 max-w-4xl mx-auto">
             <Link
               v-for="article in popularArticles"
@@ -84,7 +84,7 @@
               </p>
 
               <div class="flex items-center text-sm text-gray-500 justify-between">
-                <span>{{ article.views }} views</span>
+                <span>{{ article.views }} {{ $t('common.views') }}</span>
                 <time v-if="article.created_at" :datetime="article.created_at">
                   {{ formatDate(article.created_at) }}
                 </time>
@@ -97,7 +97,7 @@
 
     <!-- Articles List -->
     <section class="container mx-auto px-4 py-12">
-    <h2 class="text-3xl font-bold mb-8 text-gray-900 text-center">Articles</h2>
+    <h2 class="text-3xl font-bold mb-8 text-gray-900 text-center">{{ $t('index.articles') }}</h2>
 
     <div class="grid grid-cols-1 gap-8 max-w-4xl mx-auto">
         <Link
@@ -240,7 +240,7 @@ const formatDate = (dateString) => {
   })
 }
 const gradientList = [
-  'from-teal-600 via-teal-600/80 to-teal-300',
+  // Your current colors
   'from-emerald-600 via-emerald-600/80 to-emerald-300',
   'from-fuchsia-600 via-fuchsia-600/80 to-fuchsia-300',
   'from-rose-600 via-rose-600/80 to-rose-300',
@@ -253,7 +253,18 @@ const gradientList = [
   'from-pink-600 via-pink-600/80 to-pink-300',
   'from-purple-600 via-purple-600/80 to-purple-300',
   'from-indigo-600 via-indigo-600/80 to-indigo-300',
-
+  
+  'from-orange-600 via-orange-600/80 to-orange-300',
+  'from-amber-600 via-amber-600/80 to-amber-300',
+  'from-lime-600 via-lime-600/80 to-lime-300',
+  'from-violet-600 via-violet-600/80 to-violet-300',
+  'from-sky-600 via-sky-600/80 to-sky-300',
+  'from-blue-600 via-purple-600/80 to-pink-300',
+  'from-emerald-600 via-teal-600/80 to-cyan-300',
+  'from-orange-600 via-red-600/80 to-pink-300',
+  'from-yellow-600 via-orange-600/80 to-red-300',
+  'from-lime-600 via-green-600/80 to-emerald-300',
+  'from-indigo-600 via-blue-600/80 to-sky-300',
 ]
 
 

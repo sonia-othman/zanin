@@ -6,6 +6,7 @@ use App\Models\Article;
 use Illuminate\Http\Request;
 use App\Models\Category;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Session;
 use Inertia\Inertia;
 use Laravel\Scout\Builder;
 use App\Models\ArticleTranslation;
@@ -13,88 +14,53 @@ use Illuminate\Support\Facades\Log;
 
 class PublicArticleController extends Controller
 {
-    public function index(Request $request)
-    {
-        $locale = app()->getLocale();
-        $search = $request->input('search');
+// PublicArticleController.php - Optimize index method
+public function index(Request $request)
+{
+    set_time_limit(300);
+    $locale = app()->getLocale();
+    $search = $request->input('search');
 
-        // Debug logging
-        Log::info('Current locale in controller: ' . $locale);
-        Log::info('Session locale: ' . session('locale', 'not set'));
-        Log::info('Config app locale: ' . config('app.locale'));
-
-        $articles = Article::with([
-                'translation' => fn($q) => $q->where('language', $locale), 
-                'subCategory.translation' => fn($q) => $q->where('language', $locale)
-            ])
-            ->when($search, function ($query) use ($search, $locale) {
-                $query->whereHas('translations', function ($q) use ($search, $locale) {
-                    $q->where('language', $locale)
-                      ->where('title', 'like', '%' . $search . '%');
-                });
-            })
-            ->latest()
-            ->paginate(10)
-            ->withQueryString();
-
-        $categories = Category::with([
-            'translations' => fn($q) => $q->where('language', $locale),
-            'subCategories.translations' => fn($q) => $q->where('language', $locale),
-            'subCategories.articles.translations' => fn($q) => $q->where('language', $locale)
-        ])->get();
-
-        // Transform categories to include the correct translation
-        $categories = $categories->map(function ($category) use ($locale) {
-            $category->translation = $category->translations->first();
-            
-            $category->subCategories = $category->subCategories->map(function ($subCategory) use ($locale) {
-                $subCategory->translation = $subCategory->translations->first();
-                
-                $subCategory->articles = $subCategory->articles->map(function ($article) use ($locale) {
-                    $article->translation = $article->translations->first();
-                    return $article;
-                });
-                
-                return $subCategory;
+    // Use select to limit columns
+    $articles = Article::select(['id', 'slug', 'image', 'sub_category_id', 'views', 'created_at'])
+        ->with([
+            'translation' => fn($q) => $q->select(['article_id', 'title', 'excerpt'])->where('language', $locale),
+            'subCategory:id,category_id',
+            'subCategory.translation' => fn($q) => $q->select(['sub_category_id', 'name'])->where('language', $locale)
+        ])
+        ->when($search, function ($query) use ($search, $locale) {
+            $query->whereHas('translations', function ($q) use ($search, $locale) {
+                $q->where('language', $locale)
+                  ->where('title', 'like', '%' . $search . '%');
             });
-            
-            return $category;
-        });
+        })
+        ->latest()
+        ->paginate(10)
+        ->withQueryString();
 
-        // Debug: Check if we have Kurdish translations
-        $debugCategory = $categories->first();
-        if ($debugCategory) {
-            Log::info('Category translations:', $debugCategory->translations->toArray());
-            Log::info('Category translation for ' . $locale . ':', $debugCategory->translation?->toArray() ?? 'null');
-        }
+    return Inertia::render('Articles/Index', [
+        'articles' => $articles,
+        'filters' => ['search' => $search],
+        'popularArticles' => $this->getPopularArticles($locale),
+        'locale' => $locale,
+    ]);
+}
 
-        $popularArticles = Article::with(['translations' => fn($q) => $q->where('language', $locale)])
+// Cache popular articles with better key strategy
+private function getPopularArticles($locale)
+{
+    return Cache::remember("popular_articles_{$locale}", 3600, function () use ($locale) {
+        return Article::select(['id', 'slug', 'views', 'created_at'])
+            ->with(['translation' => fn($q) => $q->select(['article_id', 'title'])->where('language', $locale)])
             ->orderByDesc('views')
             ->take(5)
-            ->get()
-            ->map(function ($article) {
-                $article->translation = $article->translations->first();
-                return $article;
-            });
-
-        return Inertia::render('Articles/Index', [
-            'articles' => $articles,
-            'filters' => ['search' => $search],
-            'categories' => $categories,
-            'popularArticles' => $popularArticles,
-            'locale' => $locale,
-            'debug' => [
-                'session_locale' => session('locale'),
-                'app_locale' => app()->getLocale(),
-                'config_locale' => config('app.locale'),
-            ]
-        ]);
-    }
+            ->get();
+    });
+}
 
     public function show($slug)
     {
         $locale = app()->getLocale();
-        Log::info('Show method - Current locale: ' . $locale);
 
         $article = Article::with([
                 'translations' => fn($q) => $q->where('language', $locale), 
@@ -105,49 +71,32 @@ class PublicArticleController extends Controller
             ->where('slug', $slug)
             ->firstOrFail();
 
-        // Set the translation
-        $article->translation = $article->translations->first();
+        // Set the translation and transform the article
+        $translation = $article->translations->where('language', $locale)->first();
+        $article->translation = $translation;
+        $article->title = $translation?->title ?? 'Untitled Article';
+        $article->content = $translation?->content ?? '';
 
-        // Debug article translations
-        Log::info('Article translations:', $article->translations->toArray());
-        Log::info('Article translation for ' . $locale . ':', $article->translation?->toArray() ?? 'null');
+        // Set category translation
+        if ($article->category && $article->category->translations) {
+            $catTranslation = $article->category->translations->where('language', $locale)->first();
+            $article->category->translation = $catTranslation;
+            $article->category->name = $catTranslation?->name ?? 'Untitled Category';
+        }
+
+        // Set subcategory translation
+        if ($article->subCategory && $article->subCategory->translations) {
+            $subTranslation = $article->subCategory->translations->where('language', $locale)->first();
+            $article->subCategory->translation = $subTranslation;
+            $article->subCategory->name = $subTranslation?->name ?? 'Untitled Subcategory';
+        }
 
         $article->content = $this->processInlineImages($article->content);
         $article->increment('views');
 
-        $categories = Category::with([
-            'translations' => fn($q) => $q->where('language', $locale),
-            'subCategories.translations' => fn($q) => $q->where('language', $locale),
-            'subCategories.articles.translations' => fn($q) => $q->where('language', $locale)
-        ])->get();
-
-        // Transform categories to include the correct translation
-        $categories = $categories->map(function ($category) use ($locale) {
-            $category->translation = $category->translations->first();
-            
-            $category->subCategories = $category->subCategories->map(function ($subCategory) use ($locale) {
-                $subCategory->translation = $subCategory->translations->first();
-                
-                $subCategory->articles = $subCategory->articles->map(function ($article) use ($locale) {
-                    $article->translation = $article->translations->first();
-                    return $article;
-                });
-                
-                return $subCategory;
-            });
-            
-            return $category;
-        });
-
         return Inertia::render('Articles/Show', [
             'article' => $article,
-            'categories' => $categories,
             'locale' => $locale,
-            'debug' => [
-                'session_locale' => session('locale'),
-                'app_locale' => app()->getLocale(),
-                'config_locale' => config('app.locale'),
-            ]
         ]);
     }
 
@@ -160,37 +109,24 @@ class PublicArticleController extends Controller
             return redirect()->route('home');
         }
 
-        $articles = Article::search($search)
+        $articles = Article::with(['translations' => fn($q) => $q->where('language', $locale)])
+            ->whereHas('translations', function ($q) use ($search, $locale) {
+                $q->where('language', $locale)
+                  ->where('title', 'like', '%' . $search . '%');
+            })
             ->paginate(10);
 
-        $categories = Category::with([
-            'translations' => fn($q) => $q->where('language', $locale),
-            'subCategories.translations' => fn($q) => $q->where('language', $locale),
-            'subCategories.articles.translations' => fn($q) => $q->where('language', $locale)
-        ])->get();
-
-        // Transform categories to include the correct translation
-        $categories = $categories->map(function ($category) use ($locale) {
-            $category->translation = $category->translations->first();
-            
-            $category->subCategories = $category->subCategories->map(function ($subCategory) use ($locale) {
-                $subCategory->translation = $subCategory->translations->first();
-                
-                $subCategory->articles = $subCategory->articles->map(function ($article) use ($locale) {
-                    $article->translation = $article->translations->first();
-                    return $article;
-                });
-                
-                return $subCategory;
-            });
-            
-            return $category;
+        // Transform search results
+        $articles->getCollection()->transform(function ($article) use ($locale) {
+            $translation = $article->translations->where('language', $locale)->first();
+            $article->translation = $translation;
+            $article->title = $translation?->title ?? 'Untitled Article';
+            return $article;
         });
 
         return Inertia::render('Articles/SearchResults', [
             'articles' => $articles,
             'search' => $search,
-            'categories' => $categories,
             'locale' => $locale,
         ]);
     }

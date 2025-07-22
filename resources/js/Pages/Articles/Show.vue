@@ -1,78 +1,115 @@
 <template>
   <Layout>
-    <div class="container mx-auto px-4 py-8 flex justify-start">
-      <article class="w-full md:w-2/3 bg-white rounded-lg p-8"> <!-- Removed border and shadow -->
-        <header class="mb-8">
-          <h1 class="text-4xl font-bold text-gray-900 mb-4">
-{{ article.translation?.title || article.title }}
-          </h1>
+    <div class="container mx-auto px-4 py-8">
+      <!-- Remove the flex justify classes that were causing issues -->
+      <div class="flex" :class="isRTL ? 'justify-start' : 'justify-start'">
+        <article class="w-full md:max-w-4xl bg-white rounded-lg p-8" 
+                 :class="isRTL ? 'md:ml-auto md:mr-0' : 'md:mr-auto md:ml-0'">
+          <header class="mb-8">
+            <h1 class="text-4xl font-bold text-gray-900 mb-4" 
+                :class="isRTL ? 'text-right' : 'text-left'">
+              {{ article.translation?.title || article.title }}
+            </h1>
 
-          <div class="flex items-center text-sm text-gray-500 mb-6">
-            <span v-if="article.category" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 mr-3">
-              {{ article.category.name }}
-            </span>
-            <time v-if="article.created_at" :datetime="article.created_at">
-              {{ formatDate(article.created_at) }}
-            </time>
+            <div class="flex items-center text-sm text-gray-500 mb-6"
+                 :class="isRTL ? 'justify-start flex-row-reverse' : 'justify-start'">
+              <time v-if="article.created_at" 
+                    :datetime="article.created_at"
+                    class="inline-block">
+                {{ formatDate(article.created_at) }}
+              </time>
+              <span v-if="article.category" 
+                    class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
+                    :class="isRTL ? 'mr-3' : 'ml-3'">
+                {{ article.category.name }}
+              </span>
+            </div>
+          </header>
+
+          <!-- Show featured image if exists -->
+          <div v-if="article.image" class="mb-8">
+            <img 
+              :src="'/storage/' + article.image" 
+              :alt="article.title"
+              class="w-full h-64 object-cover rounded-lg" 
+            />
           </div>
-        </header>
 
-        <!-- Show featured image if exists -->
-        <div v-if="article.image" class="mb-8">
-          <img 
-            :src="'/storage/' + article.image" 
-            :alt="article.title"
-            class="w-full h-64 object-cover rounded-lg" 
-          />
-        </div>
-
-        <!-- Rich editor content with inline images -->
-<div class="prose prose-lg prose-slate max-w-none article-content" v-html="article.translation?.content || article.content"></div>
-      </article>
+          <!-- Rich editor content with inline images -->
+          <div class="prose prose-lg prose-slate max-w-none article-content" 
+               :class="isRTL ? 'text-right' : 'text-left'"
+               v-html="article.translation?.content || article.content">
+          </div>
+        </article>
+      </div>
     </div>
 
     <div class="container mx-auto px-4 mt-8">
-      <Link href="/" class="inline-flex items-center text-blue-600 hover:text-blue-800 transition-colors">
-        ← Back to Articles
+      <Link href="/" 
+            class="inline-flex items-center text-blue-600 hover:text-blue-800 transition-colors"
+            :class="isRTL ? 'flex-row-reverse' : ''">
+          <span :class="isRTL ? 'mr-2' : 'ml-2'">{{ $t('common.back_to_articles') }}</span>
       </Link>
     </div>
   </Layout>
 </template>
 
-
 <script setup>
-import { Link } from '@inertiajs/vue3';
+import { usePage, Link } from '@inertiajs/vue3';
 import Layout from '@/Layouts/Layout.vue';
+import { computed } from 'vue';
 
-defineProps({
-  article: Object,
-});
+
+const page = usePage();
+
+const article = page.props.article;
+
+const locale = computed(() => page.props.locale);
+
+const isRTL = computed(() => locale.value === 'ar' || locale.value === 'ku');
 
 const formatDate = (dateString) => {
-  return new Date(dateString).toLocaleDateString('en-US', {
+  const date = new Date(dateString);
+  
+  // Use appropriate locale for date formatting
+  if (isRTL.value) {
+    if (locale.value === 'ar') {
+      return date.toLocaleDateString('ar-SA', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+      });
+    } else if (locale.value === 'ku') {
+      // Kurdish formatting - you may want to adjust this based on your preferences
+      return date.toLocaleDateString('ku-IQ', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+      });
+    }
+  }
+  
+  return date.toLocaleDateString('en-US', {
     year: 'numeric',
     month: 'long',
-    day: 'numeric'
+    day: 'numeric',
   });
 };
 </script>
 
 <style scoped>
-/* Enhanced styles for article content with inline images */
 .article-content {
   @apply text-gray-800 leading-relaxed;
 }
 
 .article-content :deep(img) {
-  @apply rounded-lg  max-w-full h-auto my-6;
-  @apply mx-auto block; /* Center images */
-
+  @apply rounded-lg max-w-full h-auto my-6;
+  @apply mx-auto block; 
   max-width: 800px;   /* max width of inline images */
   max-height: 600px;  /* max height to keep images not too tall */
   width: 100%;        /* scale down images on smaller screens */
   height: auto;       /* keep aspect ratio */
 }
-
 
 .article-content :deep(h2) {
   @apply text-2xl font-bold mt-8 mb-4 text-gray-900;
@@ -91,19 +128,23 @@ const formatDate = (dateString) => {
 }
 
 .article-content :deep(ul) {
-  @apply list-disc list-inside mb-4 space-y-2;
+  @apply list-disc mb-4 space-y-2;
+  padding-inline-start: 2rem;
 }
 
 .article-content :deep(ol) {
-  @apply list-decimal list-inside mb-4 space-y-2;
+  @apply list-decimal mb-4 space-y-2;
+  padding-inline-start: 2rem;
 }
 
 .article-content :deep(li) {
-  @apply text-gray-700 ml-4;
+  @apply text-gray-700;
 }
 
 .article-content :deep(blockquote) {
-  @apply border-l-4 border-blue-500 pl-4 italic text-gray-700 bg-gray-50 py-2 my-4;
+  @apply border-blue-500 pl-4 italic text-gray-700 bg-gray-50 py-2 my-4;
+  border-inline-start-width: 4px;
+  padding-inline-start: 1rem;
 }
 
 .article-content :deep(code) {

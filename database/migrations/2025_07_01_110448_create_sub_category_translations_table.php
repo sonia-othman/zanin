@@ -10,10 +10,10 @@ class CreateSubCategoryTranslationsTable extends Migration
     {
         Schema::create('sub_category_translations', function (Blueprint $table) {
             $table->id();
+            $table->string('name');
             $table->foreignId('sub_category_id')->constrained()->onDelete('cascade');
             $table->string('language', 5);
             $table->timestamps();
-
             $table->unique(['sub_category_id', 'language']);
         });
     }

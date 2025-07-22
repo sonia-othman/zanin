@@ -3,8 +3,8 @@
 namespace Database\Seeders;
 
 use App\Models\User;
-// use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB; // Import DB facade
 
 class DatabaseSeeder extends Seeder
 {
@@ -13,11 +13,14 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // User::factory(10)->create();
+        // Truncate the 6 tables before seeding
+        DB::table('sub_category_translations')->truncate();
+        DB::table('sub_categories')->truncate();
+        DB::table('categories')->truncate();
+        DB::table('category_translations')->truncate();
+        DB::table('article_translations')->truncate();
+        DB::table('articles')->truncate();
+    //$this->call(CategorySeeder::class);
 
-        User::factory()->create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
-        ]);
     }
 }

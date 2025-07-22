@@ -1,0 +1,60 @@
+{
+  "nav": {
+    "menu": "القائمة",
+    "search": "البحث...",
+    "categories": "التصنيفات",
+    "home": "الرئيسية",
+    "close": "إغلاق",
+    "toggleMenu": "تبديل القائمة المحمولة",
+    "closeMenu": "إغلاق القائمة",
+    "closeSearch": "إغلاق البحث",
+    "selectLanguage": "اختر اللغة"
+  },
+  "language": {
+    "changing": "جاري تغيير اللغة...",
+    "english": "الإنجليزية",
+    "arabic": "العربية",
+    "kurdish": "الكردية"
+  },
+  "index": {
+    "searchTitle": "البحث عن المقالات بسهولة",
+    "searchDescription": "ابحث عن الدروس والأخبار والنصائح",
+    "mostViewed": "المقالات الأكثر مشاهدة",
+    "articles": "المقالات"
+  },
+  "search": {
+    "placeholder": "البحث في المقالات...",
+    "noResults": "لم يتم العثور على نتائج",
+    "results": "نتائج البحث",
+    "name": "البحث"
+  },
+  "common": {
+    "loading": "جاري التحميل...",
+    "error": "حدث خطأ",
+    "retry": "إعادة المحاولة",
+    "back": "العودة",
+    "next": "التالي",
+    "previous": "السابق",
+    "save": "حفظ",
+    "cancel": "إلغاء",
+    "delete": "حذف",
+    "edit": "تعديل",
+    "create": "إنشاء",
+    "update": "تحديث",
+    "views": "مشاهدات",
+    "back_to_articles": "العودة إلى المقالات"
+  },
+  "articles": {
+    "untitled": "مقال بدون عنوان",
+    "readMore": "اقرأ المزيد",
+    "relatedArticles": "مقالات ذات صلة",
+    "publishedOn": "نُشر في",
+    "updatedOn": "تم التحديث في"
+  },
+  "categories": {
+    "untitled": "تصنيف بدون عنوان",
+    "untitledSub": "تصنيف فرعي بدون عنوان",
+    "allCategories": "جميع التصنيفات",
+    "title": "التصنيفات"
+  }
+}

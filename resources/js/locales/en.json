@@ -1,0 +1,61 @@
+ {
+  "nav": {
+    "menu": "Menu",
+    "search": "Search...",
+    "categories": "Categories",
+    "home": "Home",
+    "close": "Close",
+    "toggleMenu": "Toggle mobile menu",
+    "closeMenu": "Close menu",
+    "closeSearch": "Close search",
+    "selectLanguage": "Select Language"
+  },
+  "language": {
+    "changing": "Changing language...",
+    "english": "English",
+    "arabic": "Arabic",
+    "kurdish": "Kurdish"
+  },
+  "index": {
+    "searchTitle": "Search Articles Easily",
+    "searchDescription": "Find tutorials, news, and tips",
+    "mostViewed": "Most Viewed Articles",
+    "articles": "Articles"
+  },
+  "search": {
+    "placeholder": "Search articles...",
+    "noResults": "No results found",
+    "results": "Search Results",
+    "name": "Search"
+  },
+  "common": {
+    "loading": "Loading...",
+    "error": "An error occurred",
+    "retry": "Retry",
+    "back": "Back",
+    "next": "Next",
+    "previous": "Previous",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "create": "Create",
+    "update": "Update",
+    "views": "Views",
+    "back_to_articles": "Back to Articles"
+  },
+  "articles": {
+    "untitled": "Untitled Article",
+    "readMore": "Read More",
+    "relatedArticles": "Related Articles",
+    "publishedOn": "Published on",
+    "updatedOn": "Updated on"
+  },
+  "categories": {
+
+    "untitled": "Untitled Category",
+    "untitledSub": "Untitled Subcategory",
+    "allCategories": "All Categories",
+    "title": "Categories"
+  }
+}

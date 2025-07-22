@@ -1,0 +1,60 @@
+{
+  "nav": {
+    "menu": "مێنو",
+    "search": "گەڕان...",
+    "categories": "پۆلەکان",
+    "home": "سەرەکی",
+    "close": "داخستن",
+    "toggleMenu": "گۆڕینی مێنوی مۆبایل",
+    "closeMenu": "داخستنی مێنو",
+    "closeSearch": "داخستنی گەڕان",
+    "selectLanguage": "زمان هەڵبژێرە"
+  },
+  "language": {
+    "changing": "گۆڕینی زمان...",
+    "english": "ئینگلیزی",
+    "arabic": "عەرەبی",
+    "kurdish": "کوردی"
+  },
+  "index": {
+    "searchTitle": "بە ئاسانیدا وتارەکان بگەڕێنەوە",
+    "searchDescription": "فێربوون، هەواڵ و پێشنیارەکان بدۆزەوە",
+    "mostViewed": "وتارەکان کە زۆر بینراون",
+    "articles": "وتارەکان"
+  },
+  "search": {
+    "placeholder": "گەڕان لە وتارەکان...",
+    "noResults": "هیچ ئەنجامێک نەدۆزرایەوە",
+    "results": "ئەنجامەکانی گەڕان",
+    "name": "گەڕان"
+  },
+  "common": {
+    "loading": "بارکردن...",
+    "error": "هەڵەیەک ڕوویدا",
+    "retry": "دووبارە تاقیکردنەوە",
+    "back": "گەڕانەوە",
+    "next": "دواتر",
+    "previous": "پێشتر",
+    "save": "پاشەکەوتکردن",
+    "cancel": "هەڵوەشاندنەوە",
+    "delete": "سڕینەوە",
+    "edit": "دەستکاریکردن",
+    "create": "دروستکردن",
+    "update": "نوێکردنەوە",
+    "views": "بینراوەکان",
+    "back_to_articles": "گەڕانەوە بۆ وتارەکان"
+  },
+  "articles": {
+    "untitled": "وتاری بێ ناونیشان",
+    "readMore": "زیاتر بخوێنەوە",
+    "relatedArticles": "وتارە پەیوەندیدارەکان",
+    "publishedOn": "بڵاوکراوەتەوە لە",
+    "updatedOn": "نوێکراوەتەوە لە"
+  },
+  "categories": {
+    "untitled": "پۆلی بێ ناونیشان",
+    "untitledSub": "ژێرپۆلی بێ ناونیشان",
+    "allCategories": "هەموو پۆلەکان",
+    "title": "پۆلەکان"
+  }
+}

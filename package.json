@@ -26,6 +26,7 @@
         "instantsearch.js": "^4.79.1",
         "lucide-vue-next": "^0.525.0",
         "vue": "^3.5.17",
+        "vue-i18n": "^9.14.5",
         "vue-instantsearch": "^4.21.1",
         "ziggy-js": "^2.5.3"
     }

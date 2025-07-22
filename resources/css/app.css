@@ -1,33 +1,156 @@
+/* ✅ Roboto from Google Fonts (for English) */
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Rabar_021 font (for Arabic/Kurdish) */
+/* ✅ Rabar_021 font (for Arabic/Kurdish) */
 @font-face {
   font-family: 'Rabar_021';
   src: url('/fonts/Rabar_021.ttf') format('truetype');
   font-weight: normal;
   font-style: normal;
-  font-display: swap; /* Add this for better loading */
+  font-display: swap;
 }
 
-/* Open Sans from Google Fonts (for English) */
-@import url('https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&display=swap');
-
-/* Add fallback styles */
+/* ✅ Add fallback styles */
 .font-rabar {
   font-family: 'Rabar_021', 'Arial', sans-serif;
 }
 
 .font-sans {
-  font-family: 'Open Sans', 'Arial', sans-serif;
+  font-family: 'Roboto', 'Arial', sans-serif;
 }
 
-/* Debug styles - remove after fixing */
-.font-rabar * {
-  font-family: 'Rabar_021', 'Arial', sans-serif !important;
+/* ✅ Text direction classes - affects both text flow and layout */
+.text-direction-rtl {
+  direction: rtl;
+  text-align: right;
 }
 
-.font-sans * {
-  font-family: 'Open Sans', 'Arial', sans-serif !important;
+.text-direction-ltr {
+  direction: ltr;
+  text-align: left;
+}
+
+/* ✅ RTL-specific spacing utilities */
+[dir="rtl"] .space-x-reverse > :not([hidden]) ~ :not([hidden]) {
+  --tw-space-x-reverse: 1;
+}
+
+[dir="rtl"] .divide-x-reverse > :not([hidden]) ~ :not([hidden]) {
+  --tw-divide-x-reverse: 1;
+}
+
+/* ✅ RTL-specific margin and padding utilities */
+[dir="rtl"] .ml-auto {
+  margin-left: unset;
+  margin-right: auto;
+}
+
+[dir="rtl"] .mr-auto {
+  margin-right: unset;
+  margin-left: auto;
+}
+
+/* ✅ RTL-specific flex utilities */
+[dir="rtl"] .flex-row-reverse {
+  flex-direction: row;
+}
+
+[dir="rtl"] .flex-row {
+  flex-direction: row-reverse;
+}
+
+/* ✅ Override text alignment for specific elements when needed */
+.text-direction-rtl .text-center,
+.text-direction-ltr .text-center {
+  text-align: center !important;
+}
+
+/* ✅ Form elements RTL support */
+[dir="rtl"] input[type="text"],
+[dir="rtl"] input[type="search"],
+[dir="rtl"] textarea,
+[dir="rtl"] select {
+  text-align: right;
+}
+
+[dir="ltr"] input[type="text"],
+[dir="ltr"] input[type="search"],
+[dir="ltr"] textarea,
+[dir="ltr"] select {
+  text-align: left;
+}
+
+/* ✅ Button and interactive elements RTL support */
+[dir="rtl"] .btn,
+[dir="rtl"] button {
+  text-align: center;
+}
+
+/* ✅ Navigation specific RTL support */
+[dir="rtl"] .breadcrumb {
+  flex-direction: row-reverse;
+}
+
+/* ✅ Custom RTL utility classes */
+.rtl\:ml-0 {
+  margin-left: 0;
+}
+
+.rtl\:mr-4 {
+  margin-right: 1rem;
+}
+
+.rtl\:pl-0 {
+  padding-left: 0;
+}
+
+.rtl\:pr-4 {
+  padding-right: 1rem;
+}
+
+/* ✅ Shadow and border RTL adjustments */
+[dir="rtl"] .shadow-lg {
+  box-shadow: -0.25rem 0.25rem 0.75rem rgba(0, 0, 0, 0.1);
+}
+
+/* ✅ Article content RTL support */
+[dir="rtl"] .article-content h1,
+[dir="rtl"] .article-content h2,
+[dir="rtl"] .article-content h3,
+[dir="rtl"] .article-content h4,
+[dir="rtl"] .article-content h5,
+[dir="rtl"] .article-content h6 {
+  text-align: right;
+}
+
+[dir="rtl"] .article-content p,
+[dir="rtl"] .article-content div {
+  text-align: right;
+}
+
+[dir="rtl"] .article-content ul,
+[dir="rtl"] .article-content ol {
+  padding-right: 1.5rem;
+  padding-left: 0;
+}
+
+[dir="rtl"] .article-content li {
+  text-align: right;
+}
+
+/* ✅ Responsive RTL support */
+@media (max-width: 768px) {
+  [dir="rtl"] .mobile-menu {
+    right: 0;
+    left: auto;
+  }
+  
+  [dir="ltr"] .mobile-menu {
+    left: 0;
+    right: auto;
+  }
 }

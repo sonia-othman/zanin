@@ -10,21 +10,34 @@ use Illuminate\Support\Facades\Log;
 
 class SetLocale
 {
-    public function handle($request, Closure $next)
+    public function handle(Request $request, Closure $next): Response
     {
+        $availableLocales = ['en', 'ar', 'ku'];
         $sessionLocale = session('locale');
-        $configLocale = config('app.locale');
-        $currentLocale = $sessionLocale ?? $configLocale;
+        $configLocale = config('app.locale', 'en');
         
-        // Debug logging
-        Log::info('SetLocale Middleware:');
-        Log::info('- Session locale: ' . ($sessionLocale ?? 'null'));
-        Log::info('- Config locale: ' . $configLocale);
-        Log::info('- Setting locale to: ' . $currentLocale);
+        // Determine which locale to use (prioritize session)
+        $locale = $sessionLocale && in_array($sessionLocale, $availableLocales) 
+            ? $sessionLocale 
+            : $configLocale;
         
-        App::setLocale($currentLocale);
+        // Ensure the locale is valid
+        if (!in_array($locale, $availableLocales)) {
+            $locale = 'en'; // fallback to English
+        }
         
-        Log::info('- App locale after setting: ' . app()->getLocale());
+        // Set the application locale
+        App::setLocale($locale);
+        
+        // Ensure session stores the correct locale
+        if (session('locale') !== $locale) {
+            session(['locale' => $locale]);
+        }
+        
+        // Optional: Add locale to view for debugging
+        if (config('app.debug')) {
+            view()->share('current_locale', $locale);
+        }
         
         return $next($request);
     }
