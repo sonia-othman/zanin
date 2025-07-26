@@ -57,11 +57,15 @@
 <script setup>
 import { usePage, Link, router } from '@inertiajs/vue3';
 import Layout from '@/Layouts/Layout.vue';
-import { computed, onMounted } from 'vue';
+import { computed , onMounted } from 'vue';
+
 
 const page = usePage();
+
 const article = page.props.article;
+
 const locale = computed(() => page.props.locale);
+
 const isRTL = computed(() => locale.value === 'ar' || locale.value === 'ku');
 
 onMounted(() => {
@@ -82,7 +86,7 @@ onMounted(() => {
 });
 
 const formatDate = (dateString) => {
-  const date = new Date(dateString);
+const date = new Date(dateString);
   
   // Use appropriate locale for date formatting
   if (isRTL.value) {

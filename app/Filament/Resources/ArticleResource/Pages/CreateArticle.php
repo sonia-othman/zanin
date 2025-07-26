@@ -27,6 +27,7 @@ class CreateArticle extends CreateRecord
                 ],
                 [
                     'title' => $data["title_{$lang}"],
+                    'excerpt' => $data["excerpt_{$lang}"], 
                     'content' => $data["content_{$lang}"],
                 ]
             );

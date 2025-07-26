@@ -14,6 +14,7 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Support\Str;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Grid;
@@ -118,6 +119,13 @@ class ArticleResource extends Resource
                                                 $context === 'create' ? $set('slug', Str::slug($state)) : null
                                             ),
 
+                                        Textarea::make('excerpt_en')
+                                            ->label('Excerpt (EN)')
+                                            ->required()
+                                            ->maxLength(300)
+                                            ->rows(3)
+                                            ->helperText('Brief summary of the article (max 300 characters)'),
+
                                         TiptapEditor::make('content_en')
                                             ->label('Content (EN)')
                                             ->required()
@@ -136,6 +144,13 @@ class ArticleResource extends Resource
                                             ->label('Title (KU)')
                                             ->required()
                                             ->maxLength(255),
+
+                                        Textarea::make('excerpt_ku')
+                                            ->label('Excerpt (KU)')
+                                            ->required()
+                                            ->maxLength(300)
+                                            ->rows(3)
+                                            ->helperText('Brief summary of the article (max 300 characters)'),
 
                                         TiptapEditor::make('content_ku')
                                             ->label('Content (KU)')
@@ -168,8 +183,17 @@ class ArticleResource extends Resource
                 TextColumn::make('translations.title')
                 ->label('Title (EN)')
                 ->sortable()
-                ->searchable('searchTitle')  // <-- Use the scope method name here
+                ->searchable('searchTitle')
                 ->getStateUsing(fn ($record) => $record->translation('en')->title ?? ''),
+
+                TextColumn::make('translations.excerpt')
+                ->label('Excerpt (EN)')
+                ->getStateUsing(fn ($record) => $record->translation('en')->excerpt ?? '')
+                ->limit(50)
+                ->tooltip(function (TextColumn $column): ?string {
+                    $state = $column->getState();
+                    return strlen($state) > 50 ? $state : null;
+                }),
 
                 TextColumn::make('subCategory.name')
                     ->badge()

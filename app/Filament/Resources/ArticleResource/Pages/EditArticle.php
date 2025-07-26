@@ -29,13 +29,13 @@ class EditArticle extends EditRecord
         // Update English
         $record->translations()->updateOrCreate(
             ['language' => 'en'],
-            ['title' => $this->data['title_en'], 'content' => $this->data['content_en']]
+            ['title' => $this->data['title_en'], 'content' => $this->data['content_en'], 'excerpt' => $this->data['excerpt_en']]
         );
 
         // Update Kurdish
         $record->translations()->updateOrCreate(
             ['language' => 'ku'],
-            ['title' => $this->data['title_ku'], 'content' => $this->data['content_ku']]
+            ['title' => $this->data['title_ku'], 'content' => $this->data['content_ku'], 'excerpt' => $this->data['excerpt_ku']]
         );
     }
 }

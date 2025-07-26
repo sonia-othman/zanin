@@ -21,17 +21,20 @@ public function index(Request $request)
     $locale = app()->getLocale();
     $search = $request->input('search');
 
-    // Use select to limit columns
+    // Use select to limit columns - now including excerpt
     $articles = Article::select(['id', 'slug', 'image', 'sub_category_id', 'views', 'created_at'])
         ->with([
-            'translation' => fn($q) => $q->select(['article_id', 'title'])->where('language', $locale),
+            'translation' => fn($q) => $q->select(['article_id', 'title', 'excerpt'])->where('language', $locale),
             'subCategory:id,category_id',
             'subCategory.translation' => fn($q) => $q->select(['sub_category_id', 'name'])->where('language', $locale)
         ])
         ->when($search, function ($query) use ($search, $locale) {
             $query->whereHas('translations', function ($q) use ($search, $locale) {
                 $q->where('language', $locale)
-                  ->where('title', 'like', '%' . $search . '%');
+                  ->where(function ($q) use ($search) {
+                      $q->where('title', 'like', '%' . $search . '%')
+                        ->orWhere('excerpt', 'like', '%' . $search . '%');
+                  });
             });
         })
         ->latest()
@@ -46,12 +49,12 @@ public function index(Request $request)
     ]);
 }
 
-// Cache popular articles with better key strategy
+// Cache popular articles with better key strategy - now including excerpt
 private function getPopularArticles($locale)
 {
     return Cache::remember("popular_articles_{$locale}", 3600, function () use ($locale) {
         return Article::select(['id', 'slug', 'views', 'created_at'])
-            ->with(['translation' => fn($q) => $q->select(['article_id', 'title'])->where('language', $locale)])
+            ->with(['translation' => fn($q) => $q->select(['article_id', 'title', 'excerpt'])->where('language', $locale)])
             ->orderByDesc('views')
             ->take(5)
             ->get();
@@ -75,6 +78,7 @@ private function getPopularArticles($locale)
         $translation = $article->translations->where('language', $locale)->first();
         $article->translation = $translation;
         $article->title = $translation?->title ?? 'Untitled Article';
+        $article->excerpt = $translation?->excerpt ?? '';
         $article->content = $translation?->content ?? '';
 
         // Set category translation
@@ -112,7 +116,11 @@ private function getPopularArticles($locale)
         $articles = Article::with(['translations' => fn($q) => $q->where('language', $locale)])
             ->whereHas('translations', function ($q) use ($search, $locale) {
                 $q->where('language', $locale)
-                  ->where('title', 'like', '%' . $search . '%');
+                  ->where(function ($q) use ($search) {
+                      $q->where('title', 'like', '%' . $search . '%')
+                        ->orWhere('excerpt', 'like', '%' . $search . '%')
+                        ->orWhere('content', 'like', '%' . $search . '%');
+                  });
             })
             ->paginate(10);
 
@@ -121,6 +129,7 @@ private function getPopularArticles($locale)
             $translation = $article->translations->where('language', $locale)->first();
             $article->translation = $translation;
             $article->title = $translation?->title ?? 'Untitled Article';
+            $article->excerpt = $translation?->excerpt ?? '';
             return $article;
         });
 
@@ -137,7 +146,10 @@ private function getPopularArticles($locale)
         $search = $request->input('q');
 
         $suggestions = ArticleTranslation::where('language', $locale)
-            ->where('title', 'like', '%' . $search . '%')
+            ->where(function ($q) use ($search) {
+                $q->where('title', 'like', '%' . $search . '%')
+                  ->orWhere('excerpt', 'like', '%' . $search . '%');
+            })
             ->take(5)
             ->get()
             ->mapWithKeys(function ($item) {

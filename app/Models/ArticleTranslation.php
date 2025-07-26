@@ -5,7 +5,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class ArticleTranslation extends Model
 {
-    protected $fillable = ['article_id', 'language', 'title', 'content'];
+    protected $fillable = ['article_id', 'language', 'title','excerpt', 'content'];
 
     public function article()
     {
