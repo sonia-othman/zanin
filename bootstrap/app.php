@@ -3,9 +3,6 @@
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Foundation\Configuration\Exceptions;
-use Illuminate\Session\Middleware\StartSession;
-use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
-use App\Http\Middleware\EncryptCookies;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -14,16 +11,25 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        $middleware->append(EncryptCookies::class);         // ✅ Add this
-        EncryptCookies::except('locale');   
-        
-        $middleware->append(AddQueuedCookiesToResponse::class);
-        $middleware->append(StartSession::class);
+        // Web middleware group - PROPER ORDER IS CRITICAL
+        $middleware->web(append: [
+            \App\Http\Middleware\HandleInertiaRequests::class,
+        ]);
 
-        // SetLocale MUST come before HandleInertiaRequests
-        $middleware->append(\App\Http\Middleware\SetLocale::class);
-        $middleware->append(\App\Http\Middleware\HandleInertiaRequests::class);
+        // Global middleware - these run on every request
+        $middleware->append([
+            \App\Http\Middleware\SetLocale::class,
+        ]);
 
+        // Configure cookie encryption - CORRECT SYNTAX
+        $middleware->encryptCookies(except: [
+            'locale', // Don't encrypt locale cookie
+        ]);
+
+        // Middleware aliases for route-specific usage
+        $middleware->alias([
+            'setlocale' => \App\Http\Middleware\SetLocale::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

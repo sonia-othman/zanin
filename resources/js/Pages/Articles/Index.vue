@@ -79,9 +79,7 @@
 {{ article.translation?.title || article.title }}
               </h3>
 
-              <p v-if="article.excerpt" class="text-gray-600 mb-4">
-                {{ article.excerpt }}
-              </p>
+              
 
               <div class="flex items-center text-sm text-gray-500 justify-between">
                 <span>{{ article.views }} {{ $t('common.views') }}</span>
@@ -110,10 +108,7 @@
   {{ article.translation?.title || article.title }}
 </h3>
 
-          <p v-if="article.translation?.excerpt" class="text-gray-600 mb-4">
-  {{ article.translation?.excerpt }}
-</p>
-
+      
           <div class="flex justify-end text-sm text-gray-500 ">
             <time v-if="article.created_at" :datetime="article.created_at">
               {{ formatDate(article.created_at) }}

@@ -24,7 +24,7 @@ public function index(Request $request)
     // Use select to limit columns
     $articles = Article::select(['id', 'slug', 'image', 'sub_category_id', 'views', 'created_at'])
         ->with([
-            'translation' => fn($q) => $q->select(['article_id', 'title', 'excerpt'])->where('language', $locale),
+            'translation' => fn($q) => $q->select(['article_id', 'title'])->where('language', $locale),
             'subCategory:id,category_id',
             'subCategory.translation' => fn($q) => $q->select(['sub_category_id', 'name'])->where('language', $locale)
         ])

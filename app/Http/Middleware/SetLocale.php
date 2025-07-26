@@ -13,13 +13,23 @@ class SetLocale
     public function handle(Request $request, Closure $next): Response
     {
         $availableLocales = ['en', 'ar', 'ku'];
+        
+        // Check for URL locale parameter first (from /lang/{lang} route)
+        $urlLocale = $request->route('lang');
+        
+        // Then check session, cookie, and finally config
         $sessionLocale = session('locale');
+        $cookieLocale = $request->cookie('locale');
         $configLocale = config('app.locale', 'en');
         
-        // Determine which locale to use (prioritize session)
-        $locale = $sessionLocale && in_array($sessionLocale, $availableLocales) 
-            ? $sessionLocale 
-            : $configLocale;
+        // Priority: URL > Session > Cookie > Config
+        $locale = $urlLocale && in_array($urlLocale, $availableLocales) 
+            ? $urlLocale 
+            : ($sessionLocale && in_array($sessionLocale, $availableLocales) 
+                ? $sessionLocale 
+                : ($cookieLocale && in_array($cookieLocale, $availableLocales) 
+                    ? $cookieLocale 
+                    : $configLocale));
         
         // Ensure the locale is valid
         if (!in_array($locale, $availableLocales)) {
@@ -29,8 +39,9 @@ class SetLocale
         // Set the application locale
         App::setLocale($locale);
         
-        // Ensure session stores the correct locale
-        if (session('locale') !== $locale) {
+        // Only update session if locale actually changed to prevent session conflicts
+        if (!session()->has('locale') || session('locale') !== $locale) {
+            // Use put instead of direct session manipulation
             session(['locale' => $locale]);
         }
         

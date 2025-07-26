@@ -125,7 +125,10 @@ class ArticleResource extends Resource
                                             ->profile('default')
                                             ->disk('public')
                                             ->directory('articles/attachments')
-                                            ->output(TiptapOutput::Html),
+                                            ->output(TiptapOutput::Html)
+                                            ->tools([
+                                                'bold', 'italic', 'link', 'bullet-list', 'ordered-list', 'code-block', 'media'
+                                            ])
                                     ]),
                                 Tab::make('Kurdish')
                                     ->schema([
@@ -141,16 +144,16 @@ class ArticleResource extends Resource
                                             ->profile('default')
                                             ->disk('public')
                                             ->directory('articles/attachments')
-                                            ->output(TiptapOutput::Html),
+                                            ->output(TiptapOutput::Html)
+                                            ->tools([
+                                                'bold', 'italic', 'link', 'bullet-list', 'ordered-list', 'code-block', 'media'
+                                            ])
                                     ]),
-                            ])
-                            ->columnSpanFull(),
+                            ])->columnSpanFull(),
                     ]),
-
                 Forms\Components\Hidden::make('user_id')
                     ->default(auth()->id()),
-            ])
-            ->columns(1);
+            ])->columns(1);
     }
 
     public static function table(Table $table): Table

@@ -55,18 +55,31 @@
 </template>
 
 <script setup>
-import { usePage, Link } from '@inertiajs/vue3';
+import { usePage, Link, router } from '@inertiajs/vue3';
 import Layout from '@/Layouts/Layout.vue';
-import { computed } from 'vue';
-
+import { computed, onMounted } from 'vue';
 
 const page = usePage();
-
 const article = page.props.article;
-
 const locale = computed(() => page.props.locale);
-
 const isRTL = computed(() => locale.value === 'ar' || locale.value === 'ku');
+
+onMounted(() => {
+  const articleContent = document.querySelector('.article-content');
+  if (!articleContent) return;
+
+  articleContent.querySelectorAll('a').forEach(link => {
+    const href = link.getAttribute('href');
+
+    // Check if href is internal link (starts with / and no protocol)
+    if (href && href.startsWith('/') && !href.startsWith('//')) {
+      link.addEventListener('click', (e) => {
+        e.preventDefault();
+        router.visit(href);
+      });
+    }
+  });
+});
 
 const formatDate = (dateString) => {
   const date = new Date(dateString);
