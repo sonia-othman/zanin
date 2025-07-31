@@ -42,7 +42,8 @@
     "create": "Create",
     "update": "Update",
     "views": "Views",
-    "back_to_articles": "Back to Articles"
+    "back_to_articles": "Back to Articles",
+    "author": "Author"
   },
   "articles": {
     "untitled": "Untitled Article",

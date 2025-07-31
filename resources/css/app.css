@@ -142,6 +142,31 @@
   text-align: right;
 }
 
+/* ✅ Force font override for article content - MOVED OUTSIDE MEDIA QUERY */
+[dir="rtl"] .article-content,
+[dir="rtl"] .article-content * {
+  font-family: 'Rabar_021', 'Arial', sans-serif !important;
+}
+
+[dir="ltr"] .article-content,
+[dir="ltr"] .article-content * {
+  font-family: 'Roboto', 'Arial', sans-serif !important;
+}
+
+/* Alternative: Apply to specific elements */
+.article-content p,
+.article-content div,
+.article-content span,
+.article-content h1,
+.article-content h2,
+.article-content h3,
+.article-content h4,
+.article-content h5,
+.article-content h6,
+.article-content li {
+  font-family: inherit !important;
+}
+
 /* ✅ Responsive RTL support */
 @media (max-width: 768px) {
   [dir="rtl"] .mobile-menu {

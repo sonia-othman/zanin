@@ -26,20 +26,15 @@
             </div>
           </header>
 
-          <!-- Show featured image if exists -->
-          <div v-if="article.image" class="mb-8">
-            <img 
-              :src="'/storage/' + article.image" 
-              :alt="article.title"
-              class="w-full h-64 object-cover rounded-lg" 
-            />
-          </div>
+          
 
           <!-- Rich editor content with inline images -->
-          <div class="prose prose-lg prose-slate max-w-none article-content" 
-               :class="isRTL ? 'text-right' : 'text-left'"
-               v-html="article.translation?.content || article.content">
-          </div>
+        <div class="prose prose-lg prose-slate max-w-none article-content" 
+     :class="[
+       isRTL ? 'text-right font-rabar' : 'text-left font-sans'
+     ]"
+     v-html="article.translation?.content || article.content">
+</div>
         </article>
       </div>
     </div>

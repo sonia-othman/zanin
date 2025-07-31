@@ -3,6 +3,13 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
+
+/**
+ * @property string|null $name
+ * @property \App\Models\SubCategoryTranslation|null $translation
+ */
+
+
 class SubCategory extends Model
 {
     protected $fillable = ['slug', 'category_id'];

@@ -63,7 +63,6 @@ class HandleInertiaRequests extends Middleware
     // HandleInertiaRequests.php - Improved caching
 private function getTranslatedCategories($locale)
 {
-    // Use more specific cache keys and longer TTL for stable data
     return Cache::remember("categories_nav_{$locale}_v2", 7200, function () use ($locale) {
         return Category::select(['id', 'slug'])
             ->with([
@@ -78,25 +77,37 @@ private function getTranslatedCategories($locale)
                 $translation = $category->translations->first();
                 $category->translation = $translation;
                 $category->name = $translation?->name ?? 'Untitled';
-                
-                $category->sub_categories = $category->subCategories->transform(function ($sub) use ($locale) {
-                    $subTranslation = $sub->translations->first();
-                    $sub->translation = $subTranslation;
-                    $sub->name = $subTranslation?->name ?? 'Untitled';
-                    
-                    $sub->articles = $sub->articles->transform(function ($article) use ($locale) {
-                        $articleTranslation = $article->translations->first();
-                        $article->translation = $articleTranslation;
-                        $article->title = $articleTranslation?->title ?? 'Untitled';
-                        return $article;
-                    });
-                    
-                    return $sub;
-                });
-                
+
+                // Filter subcategories to only those with articles
+                $category->sub_categories = $category->subCategories
+                    ->filter(fn($sub) => $sub->articles->isNotEmpty())
+                    ->transform(function ($sub) use ($locale) {
+                        $subTranslation = $sub->translations->first();
+                        $sub->translation = $subTranslation;
+                        $sub->name = $subTranslation?->name ?? 'Untitled';
+
+                        $sub->articles = $sub->articles->transform(function ($article) use ($locale) {
+                            $articleTranslation = $article->translations->first();
+                            $article->translation = $articleTranslation;
+                            $article->title = $articleTranslation?->title ?? 'Untitled';
+                            return $article;
+                        });
+
+                        return $sub;
+                    })
+                    ->values(); // reset keys after filter
+
+                // Return null to remove categories with no subcategories with articles
+                if ($category->sub_categories->isEmpty()) {
+                    return null;
+                }
+
                 unset($category->subCategories);
                 return $category;
-            });
+            })
+            ->filter() // remove null categories
+            ->values(); // reset keys
     });
 }
+
 }

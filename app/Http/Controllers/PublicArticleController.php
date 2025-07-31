@@ -22,11 +22,12 @@ public function index(Request $request)
     $search = $request->input('search');
 
     // Use select to limit columns - now including excerpt
-    $articles = Article::select(['id', 'slug', 'image', 'sub_category_id', 'views', 'created_at'])
+        $articles = Article::select(['id', 'slug', 'image', 'sub_category_id', 'views', 'created_at', 'user_id'])
         ->with([
             'translation' => fn($q) => $q->select(['article_id', 'title', 'excerpt'])->where('language', $locale),
             'subCategory:id,category_id',
-            'subCategory.translation' => fn($q) => $q->select(['sub_category_id', 'name'])->where('language', $locale)
+            'subCategory.translation' => fn($q) => $q->select(['sub_category_id', 'name'])->where('language', $locale),
+            'author:id,name' 
         ])
         ->when($search, function ($query) use ($search, $locale) {
             $query->whereHas('translations', function ($q) use ($search, $locale) {

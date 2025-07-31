@@ -2,9 +2,9 @@
 
 namespace App\Filament\Resources\ArticleResource\Pages;
 
-use App\Models\ArticleTranslation;
 use Filament\Resources\Pages\EditRecord;
 use App\Filament\Resources\ArticleResource;
+use Tiptap\Editor; // ✅ TipTap HTML renderer
 
 class EditArticle extends EditRecord
 {
@@ -12,12 +12,16 @@ class EditArticle extends EditRecord
 
     protected function mutateFormDataBeforeFill(array $data): array
     {
-        // Fix: Add ->first() to get the actual model instance
-        $data['title_en'] = $this->record->translation('en')->first()?->title;
-        $data['content_en'] = $this->record->translation('en')->first()?->content;
+        $enTranslation = $this->record->translations()->where('language', 'en')->first();
+        $kuTranslation = $this->record->translations()->where('language', 'ku')->first();
 
-        $data['title_ku'] = $this->record->translation('ku')->first()?->title;
-        $data['content_ku'] = $this->record->translation('ku')->first()?->content;
+        $data['title_en'] = $enTranslation?->title ?? '';
+        $data['content_en'] = $enTranslation?->content ?? '';
+        $data['excerpt_en'] = $enTranslation?->excerpt ?? '';
+
+        $data['title_ku'] = $kuTranslation?->title ?? '';
+        $data['content_ku'] = $kuTranslation?->content ?? '';
+        $data['excerpt_ku'] = $kuTranslation?->excerpt ?? '';
 
         return $data;
     }
@@ -26,16 +30,36 @@ class EditArticle extends EditRecord
     {
         $record = $this->record;
 
-        // Update English
+        $editor = new Editor(); // ✅ Create TipTap editor instance
+
+        // Convert JSON to HTML (English)
+        $htmlEn = is_array($this->data['content_en']) 
+            ? $editor->setContent($this->data['content_en'])->getHTML() 
+            : $this->data['content_en'];
+
+        // Convert JSON to HTML (Kurdish)
+        $htmlKu = is_array($this->data['content_ku']) 
+            ? $editor->setContent($this->data['content_ku'])->getHTML() 
+            : $this->data['content_ku'];
+
+        // Save English
         $record->translations()->updateOrCreate(
             ['language' => 'en'],
-            ['title' => $this->data['title_en'], 'content' => $this->data['content_en'], 'excerpt' => $this->data['excerpt_en']]
+            [
+                'title' => $this->data['title_en'] ?? '',
+                'content' => $htmlEn,
+                'excerpt' => $this->data['excerpt_en'] ?? ''
+            ]
         );
 
-        // Update Kurdish
+        // Save Kurdish
         $record->translations()->updateOrCreate(
             ['language' => 'ku'],
-            ['title' => $this->data['title_ku'], 'content' => $this->data['content_ku'], 'excerpt' => $this->data['excerpt_ku']]
+            [
+                'title' => $this->data['title_ku'] ?? '',
+                'content' => $htmlKu,
+                'excerpt' => $this->data['excerpt_ku'] ?? ''
+            ]
         );
     }
 }

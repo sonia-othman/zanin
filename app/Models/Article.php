@@ -4,6 +4,9 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Laravel\Scout\Searchable;
 
+/**
+ * @property \App\Models\ArticleTranslation|null $translation
+ */
 class Article extends Model
 {
     use Searchable;
@@ -75,6 +78,10 @@ public function category()
     );
 }
 
+public function author()
+{
+    return $this->belongsTo(\App\Models\User::class, 'user_id');
+}
 
     
 }

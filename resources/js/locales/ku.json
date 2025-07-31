@@ -42,7 +42,8 @@
     "create": "دروستکردن",
     "update": "نوێکردنەوە",
     "views": "بینراوەکان",
-    "back_to_articles": "گەڕانەوە بۆ وتارەکان"
+    "back_to_articles": "گەڕانەوە بۆ وتارەکان",
+    "author": "نووسەر"
   },
   "articles": {
     "untitled": "وتاری بێ ناونیشان",

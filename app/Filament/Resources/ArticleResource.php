@@ -22,11 +22,13 @@ use Filament\Forms\Components\Section;
 use Filament\Forms\Components\TagsInput;
 use Filament\Forms\Components\Tabs;
 use Filament\Forms\Components\Tabs\Tab;
+use Filament\Forms\Components\Hidden;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Filters\SelectFilter;
 use FilamentTiptapEditor\TiptapEditor;
 use FilamentTiptapEditor\Enums\TiptapOutput;
+use Illuminate\Support\Facades\Auth;
 
 class ArticleResource extends Resource
 {
@@ -166,8 +168,8 @@ class ArticleResource extends Resource
                                     ]),
                             ])->columnSpanFull(),
                     ]),
-                Forms\Components\Hidden::make('user_id')
-                    ->default(auth()->id()),
+               Hidden::make('user_id')
+    ->default(fn () => Auth::id()),
             ])->columns(1);
     }
 

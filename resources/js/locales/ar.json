@@ -42,7 +42,8 @@
     "create": "إنشاء",
     "update": "تحديث",
     "views": "مشاهدات",
-    "back_to_articles": "العودة إلى المقالات"
+    "back_to_articles": "العودة إلى المقالات",
+    "author": "الكاتب"
   },
   "articles": {
     "untitled": "مقال بدون عنوان",
