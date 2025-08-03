@@ -1,89 +1,72 @@
 <template>
   <Layout>
     <div class="container mx-auto px-4 py-8">
-      <!-- Remove the flex justify classes that were causing issues -->
       <div class="flex" :class="isRTL ? 'justify-start' : 'justify-start'">
-        <article class="w-full md:max-w-4xl bg-white rounded-lg p-8" 
+        <article class="w-full md:max-w-4xl bg-white rounded-lg p-8"
                  :class="isRTL ? 'md:ml-auto md:mr-0' : 'md:mr-auto md:ml-0'">
           <header class="mb-8">
-            <h1 class="text-4xl font-bold text-gray-900 mb-4" 
+            <h1 class="text-4xl font-bold text-gray-900 mb-4"
                 :class="isRTL ? 'text-right' : 'text-left'">
               {{ article.translation?.title || article.title }}
             </h1>
 
             <div class="flex items-center text-sm text-gray-500 mb-6"
                  :class="isRTL ? 'justify-start flex-row-reverse' : 'justify-start'">
-              <time v-if="article.created_at" 
+              <time v-if="article.created_at"
                     :datetime="article.created_at"
                     class="inline-block">
                 {{ formatDate(article.created_at) }}
               </time>
-              <span v-if="article.category" 
-                    class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
-                    :class="isRTL ? 'mr-3' : 'ml-3'">
-                {{ article.category.name }}
+              <span v-if="article.subCategory?.translation"
+                class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
+                :class="isRTL ? 'mr-3' : 'ml-3'">
+{{ article.subCategory?.translation?.name ?? article.subCategory?.name ?? 'No Subcategory Name' }}
               </span>
+
+              <span v-if="article.subCategory?.category?.translation"
+                class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800"
+                :class="isRTL ? 'mr-3' : 'ml-3'">
+                {{ article.subCategory?.category?.translation?.name ?? article.subCategory?.category?.name ?? 'No Category Name' }}
+              </span>
+
+
+
             </div>
           </header>
 
-          
-
-          <!-- Rich editor content with inline images -->
-        <div class="prose prose-lg prose-slate max-w-none article-content" 
-     :class="[
-       isRTL ? 'text-right font-rabar' : 'text-left font-sans'
-     ]"
-     v-html="article.translation?.content || article.content">
-</div>
+          <div class="prose prose-lg prose-slate max-w-none article-content"
+               :class="[
+                 isRTL ? 'text-right font-rabar' : 'text-left font-sans'
+               ]"
+               v-html="article.content_html">
+          </div>
         </article>
       </div>
     </div>
 
     <div class="container mx-auto px-4 mt-8">
-      <Link href="/" 
+      <Link href="/"
             class="inline-flex items-center text-blue-600 hover:text-blue-800 transition-colors"
             :class="isRTL ? 'flex-row-reverse' : ''">
-          <span :class="isRTL ? 'mr-2' : 'ml-2'">{{ $t('common.back_to_articles') }}</span>
+        <span :class="isRTL ? 'mr-2' : 'ml-2'">{{ $t('common.back_to_articles') }}</span>
       </Link>
     </div>
   </Layout>
 </template>
 
 <script setup>
-import { usePage, Link, router } from '@inertiajs/vue3';
+import { usePage, Link } from '@inertiajs/vue3';
 import Layout from '@/Layouts/Layout.vue';
-import { computed , onMounted } from 'vue';
-
+import { computed } from 'vue';
 
 const page = usePage();
-
 const article = page.props.article;
-
 const locale = computed(() => page.props.locale);
-
 const isRTL = computed(() => locale.value === 'ar' || locale.value === 'ku');
 
-onMounted(() => {
-  const articleContent = document.querySelector('.article-content');
-  if (!articleContent) return;
-
-  articleContent.querySelectorAll('a').forEach(link => {
-    const href = link.getAttribute('href');
-
-    // Check if href is internal link (starts with / and no protocol)
-    if (href && href.startsWith('/') && !href.startsWith('//')) {
-      link.addEventListener('click', (e) => {
-        e.preventDefault();
-        router.visit(href);
-      });
-    }
-  });
-});
-
 const formatDate = (dateString) => {
-const date = new Date(dateString);
-  
-  // Use appropriate locale for date formatting
+  const date = new Date(dateString);
+
   if (isRTL.value) {
     if (locale.value === 'ar') {
       return date.toLocaleDateString('ar-SA', {
@@ -92,7 +75,6 @@ const date = new Date(dateString);
         day: 'numeric',
       });
     } else if (locale.value === 'ku') {
-      // Kurdish formatting - you may want to adjust this based on your preferences
       return date.toLocaleDateString('ku-IQ', {
         year: 'numeric',
         month: 'long',
@@ -100,7 +82,7 @@ const date = new Date(dateString);
       });
     }
   }
-  
+
   return date.toLocaleDateString('en-US', {
     year: 'numeric',
     month: 'long',
@@ -115,12 +97,11 @@ const date = new Date(dateString);
 }
 
 .article-content :deep(img) {
-  @apply rounded-lg max-w-full h-auto my-6;
-  @apply mx-auto block; 
-  max-width: 800px;   /* max width of inline images */
-  max-height: 600px;  /* max height to keep images not too tall */
-  width: 100%;        /* scale down images on smaller screens */
-  height: auto;       /* keep aspect ratio */
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 1.5rem auto;
+  border-radius: 8px;
 }
 
 .article-content :deep(h2) {

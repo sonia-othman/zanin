@@ -16,11 +16,11 @@ class EditArticle extends EditRecord
         $kuTranslation = $this->record->translations()->where('language', 'ku')->first();
 
         $data['title_en'] = $enTranslation?->title ?? '';
-        $data['content_en'] = $enTranslation?->content ?? '';
+        $data['content_en'] = $enTranslation?->content ?? ''; // JSON
         $data['excerpt_en'] = $enTranslation?->excerpt ?? '';
 
         $data['title_ku'] = $kuTranslation?->title ?? '';
-        $data['content_ku'] = $kuTranslation?->content ?? '';
+        $data['content_ku'] = $kuTranslation?->content ?? ''; // JSON
         $data['excerpt_ku'] = $kuTranslation?->excerpt ?? '';
 
         return $data;
@@ -30,34 +30,24 @@ class EditArticle extends EditRecord
     {
         $record = $this->record;
 
-        $editor = new Editor(); // ✅ Create TipTap editor instance
-
-        // Convert JSON to HTML (English)
-        $htmlEn = is_array($this->data['content_en']) 
-            ? $editor->setContent($this->data['content_en'])->getHTML() 
-            : $this->data['content_en'];
-
-        // Convert JSON to HTML (Kurdish)
-        $htmlKu = is_array($this->data['content_ku']) 
-            ? $editor->setContent($this->data['content_ku'])->getHTML() 
-            : $this->data['content_ku'];
-
-        // Save English
         $record->translations()->updateOrCreate(
             ['language' => 'en'],
             [
                 'title' => $this->data['title_en'] ?? '',
-                'content' => $htmlEn,
+                'content' => is_array($this->data['content_en'])
+                    ? json_encode($this->data['content_en'])
+                    : $this->data['content_en'],
                 'excerpt' => $this->data['excerpt_en'] ?? ''
             ]
         );
 
-        // Save Kurdish
         $record->translations()->updateOrCreate(
             ['language' => 'ku'],
             [
                 'title' => $this->data['title_ku'] ?? '',
-                'content' => $htmlKu,
+                'content' => is_array($this->data['content_ku'])
+                    ? json_encode($this->data['content_ku'])
+                    : $this->data['content_ku'],
                 'excerpt' => $this->data['excerpt_ku'] ?? ''
             ]
         );

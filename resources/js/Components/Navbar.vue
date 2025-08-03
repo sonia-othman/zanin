@@ -83,7 +83,6 @@
             :disabled="isChangingLanguage"
           >
             <option value="en">{{ $t('language.english') }}</option>
-            <option value="ar">{{ $t('language.arabic') }}</option>
             <option value="ku">{{ $t('language.kurdish') }}</option>
           </select>
         </div>

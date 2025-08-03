@@ -11,6 +11,9 @@ use Inertia\Inertia;
 use Laravel\Scout\Builder;
 use App\Models\ArticleTranslation;
 use Illuminate\Support\Facades\Log;
+use Tiptap\Editor;
+use Tiptap\Extensions\StarterKit;
+use App\TiptapExtensions\Image; // <-- Use your custom extension
 
 class PublicArticleController extends Controller
 {
@@ -61,48 +64,303 @@ private function getPopularArticles($locale)
             ->get();
     });
 }
+public function show($slug)
+{
+    $locale = app()->getLocale();
 
-    public function show($slug)
+    $article = Article::with([
+        'translations' => fn($q) => $q->where('language', $locale),
+        'subCategory.translations' => fn($q) => $q->where('language', $locale),
+        'subCategory.category.translations' => fn($q) => $q->where('language', $locale),
+        'images',
+    ])->where('slug', $slug)->firstOrFail();
+
+    // Assign article translation
+    $translation = $article->translations->first();
+    $article->translation = $translation;
+    $article->title = $translation?->title ?? 'Untitled Article';
+
+    // Assign subCategory translation
+    if ($article->subCategory) {
+        $subTrans = $article->subCategory->translations->first();
+        $article->subCategory->translation = $subTrans;
+        $article->subCategory->name = $subTrans?->name ?? 'No Subcategory Name';
+
+        // Assign category translation
+        if ($article->subCategory->category) {
+            $catTrans = $article->subCategory->category->translations->first();
+            $article->subCategory->category->translation = $catTrans;
+            $article->subCategory->category->name = $catTrans?->name ?? 'No Category Name';
+        }
+    }
+
+    $rawContent = $translation?->content ?? '';
+    $content = $this->parseJsonContent($rawContent);
+    $htmlContent = $this->convertJsonToHtml($content);
+    $article->content_html = $htmlContent;
+
+    $article->increment('views');
+
+    return Inertia::render('Articles/Show', [
+        'article' => $article->toArray(),
+        'locale' => $locale,
+    ]);
+}
+
+
+
+
+    private function parseJsonContent($rawContent)
     {
-        $locale = app()->getLocale();
-
-        $article = Article::with([
-                'translations' => fn($q) => $q->where('language', $locale), 
-                'category.translations' => fn($q) => $q->where('language', $locale), 
-                'subCategory.translations' => fn($q) => $q->where('language', $locale), 
-                'images'
-            ])
-            ->where('slug', $slug)
-            ->firstOrFail();
-
-        // Set the translation and transform the article
-        $translation = $article->translations->where('language', $locale)->first();
-        $article->translation = $translation;
-        $article->title = $translation?->title ?? 'Untitled Article';
-        $article->excerpt = $translation?->excerpt ?? '';
-        $article->content = $translation?->content ?? '';
-
-        // Set category translation
-        if ($article->category && $article->category->translations) {
-            $catTranslation = $article->category->translations->where('language', $locale)->first();
-            $article->category->translation = $catTranslation;
-            $article->category->name = $catTranslation?->name ?? 'Untitled Category';
+        if (empty($rawContent)) {
+            return null;
         }
 
-        // Set subcategory translation
-        if ($article->subCategory && $article->subCategory->translations) {
-            $subTranslation = $article->subCategory->translations->where('language', $locale)->first();
-            $article->subCategory->translation = $subTranslation;
-            $article->subCategory->name = $subTranslation?->name ?? 'Untitled Subcategory';
+        // If it's already an array, return it
+        if (is_array($rawContent)) {
+            return $rawContent;
         }
 
-        $article->content = $this->processInlineImages($article->content);
-        $article->increment('views');
+        // If it's an object, convert to array
+        if (is_object($rawContent)) {
+            return json_decode(json_encode($rawContent), true);
+        }
 
-        return Inertia::render('Articles/Show', [
-            'article' => $article,
-            'locale' => $locale,
-        ]);
+        // If it's a string, try to decode it
+        if (is_string($rawContent)) {
+            $decoded = json_decode($rawContent, true);
+            if (json_last_error() === JSON_ERROR_NONE) {
+                return $decoded;
+            }
+        }
+
+        return null;
+    }
+
+    private function convertJsonToHtml($content)
+    {
+        if (!$content || !isset($content['content'])) {
+            return '';
+        }
+
+        $html = '';
+        
+        foreach ($content['content'] as $block) {
+            $html .= $this->renderBlock($block);
+        }
+
+        return $html;
+    }
+
+    private function renderBlock($block)
+    {
+        if (!isset($block['type'])) {
+            return '';
+        }
+
+        $html = '';
+        
+        switch ($block['type']) {
+            case 'paragraph':
+                $html .= '<p>';
+                if (isset($block['content'])) {
+                    foreach ($block['content'] as $element) {
+                        $html .= $this->renderInlineElement($element);
+                    }
+                }
+                $html .= '</p>';
+                break;
+
+            case 'heading':
+                $level = $block['attrs']['level'] ?? 1;
+                $html .= "<h{$level}>";
+                if (isset($block['content'])) {
+                    foreach ($block['content'] as $element) {
+                        $html .= $this->renderInlineElement($element);
+                    }
+                }
+                $html .= "</h{$level}>";
+                break;
+
+            case 'bulletList':
+                $html .= '<ul>';
+                if (isset($block['content'])) {
+                    foreach ($block['content'] as $listItem) {
+                        $html .= $this->renderBlock($listItem);
+                    }
+                }
+                $html .= '</ul>';
+                break;
+
+            case 'orderedList':
+                $start = isset($block['attrs']['start']) ? ' start="' . $block['attrs']['start'] . '"' : '';
+                $html .= "<ol{$start}>";
+                if (isset($block['content'])) {
+                    foreach ($block['content'] as $listItem) {
+                        $html .= $this->renderBlock($listItem);
+                    }
+                }
+                $html .= '</ol>';
+                break;
+
+            case 'listItem':
+                $html .= '<li>';
+                if (isset($block['content'])) {
+                    foreach ($block['content'] as $element) {
+                        $html .= $this->renderBlock($element);
+                    }
+                }
+                $html .= '</li>';
+                break;
+
+            case 'blockquote':
+                $html .= '<blockquote>';
+                if (isset($block['content'])) {
+                    foreach ($block['content'] as $element) {
+                        $html .= $this->renderBlock($element);
+                    }
+                }
+                $html .= '</blockquote>';
+                break;
+
+            case 'codeBlock':
+                $language = $block['attrs']['language'] ?? '';
+                $html .= '<pre><code' . ($language ? ' class="language-' . htmlspecialchars($language) . '"' : '') . '>';
+                if (isset($block['content'])) {
+                    foreach ($block['content'] as $element) {
+                        if (isset($element['text'])) {
+                            $html .= htmlspecialchars($element['text']);
+                        }
+                    }
+                }
+                $html .= '</code></pre>';
+                break;
+
+            case 'horizontalRule':
+                $html .= '<hr>';
+                break;
+
+            case 'image':
+                $html .= $this->renderImage($block);
+                break;
+        }
+
+        return $html;
+    }
+
+    private function renderInlineElement($element)
+    {
+        if (!isset($element['type'])) {
+            return '';
+        }
+
+        $html = '';
+
+        switch ($element['type']) {
+            case 'text':
+                $text = $element['text'] ?? '';
+                
+                // Apply text formatting marks
+                if (isset($element['marks'])) {
+                    foreach ($element['marks'] as $mark) {
+                        switch ($mark['type']) {
+                            case 'bold':
+                            case 'strong':
+                                $text = '<strong>' . $text . '</strong>';
+                                break;
+                            case 'italic':
+                            case 'em':
+                                $text = '<em>' . $text . '</em>';
+                                break;
+                            case 'code':
+                                $text = '<code>' . htmlspecialchars($text) . '</code>';
+                                break;
+                            case 'link':
+                                $href = $mark['attrs']['href'] ?? '#';
+                                $target = isset($mark['attrs']['target']) ? ' target="' . htmlspecialchars($mark['attrs']['target']) . '"' : '';
+                                $text = '<a href="' . htmlspecialchars($href) . '"' . $target . '>' . $text . '</a>';
+                                break;
+                            case 'underline':
+                                $text = '<u>' . $text . '</u>';
+                                break;
+                            case 'strike':
+                                $text = '<s>' . $text . '</s>';
+                                break;
+                        }
+                    }
+                } else {
+                    $text = htmlspecialchars($text);
+                }
+                
+                $html .= $text;
+                break;
+
+            case 'hardBreak':
+                $html .= '<br>';
+                break;
+
+            case 'image':
+                $html .= $this->renderImage($element);
+                break;
+        }
+
+        return $html;
+    }
+
+    private function renderImage($element)
+    {
+        $attrs = $element['attrs'] ?? [];
+        
+        $src = $attrs['src'] ?? '';
+        $alt = $attrs['alt'] ?? '';
+        $title = $attrs['title'] ?? '';
+        $width = $attrs['width'] ?? null;
+        $height = $attrs['height'] ?? null;
+        $class = $attrs['class'] ?? '';
+        $style = $attrs['style'] ?? '';
+
+        if (empty($src)) {
+            \Log::warning('Image element has no src attribute', ['attrs' => $attrs]);
+            return '';
+        }
+
+        \Log::info('Rendering image', ['src' => $src, 'alt' => $alt, 'attrs' => $attrs]);
+
+        $attributes = [
+            'src="' . htmlspecialchars($src) . '"',
+            'alt="' . htmlspecialchars($alt) . '"'
+        ];
+
+        if (!empty($title)) {
+            $attributes[] = 'title="' . htmlspecialchars($title) . '"';
+        }
+
+        if ($width !== null) {
+            $attributes[] = 'width="' . htmlspecialchars($width) . '"';
+        }
+
+        if ($height !== null) {
+            $attributes[] = 'height="' . htmlspecialchars($height) . '"';
+        }
+
+        if (!empty($class)) {
+            $attributes[] = 'class="' . htmlspecialchars($class) . '"';
+        }
+
+        if (!empty($style)) {
+            $attributes[] = 'style="' . htmlspecialchars($style) . '"';
+        }
+
+        // Add loading="lazy" for better performance
+        if (isset($attrs['lazy']) && $attrs['lazy']) {
+            $attributes[] = 'loading="lazy"';
+        }
+
+        $html = '<img ' . implode(' ', $attributes) . '>';
+        
+        \Log::info('Generated image HTML', ['html' => $html]);
+        
+        return $html;
     }
 
     public function search(Request $request)

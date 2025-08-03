@@ -135,7 +135,7 @@ class ArticleResource extends Resource
                                             ->profile('default')
                                             ->disk('public')
                                             ->directory('articles/attachments')
-                                            ->output(TiptapOutput::Html)
+                                            ->output(\FilamentTiptapEditor\Enums\TiptapOutput::Json)
                                             ->tools([
                                                 'bold', 'italic', 'link', 'bullet-list', 'ordered-list', 'code-block', 'media'
                                             ])
@@ -161,7 +161,7 @@ class ArticleResource extends Resource
                                             ->profile('default')
                                             ->disk('public')
                                             ->directory('articles/attachments')
-                                            ->output(TiptapOutput::Html)
+                                            ->output(\FilamentTiptapEditor\Enums\TiptapOutput::Json)
                                             ->tools([
                                                 'bold', 'italic', 'link', 'bullet-list', 'ordered-list', 'code-block', 'media'
                                             ])
