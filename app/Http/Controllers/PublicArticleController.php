@@ -70,23 +70,24 @@ public function show($slug)
 
     $article = Article::with([
         'translations' => fn($q) => $q->where('language', $locale),
+        'subCategory:id,category_id', // ✅ must include id and category_id
         'subCategory.translations' => fn($q) => $q->where('language', $locale),
+        'subCategory.category:id', // ✅ make sure category is loaded
         'subCategory.category.translations' => fn($q) => $q->where('language', $locale),
         'images',
     ])->where('slug', $slug)->firstOrFail();
 
-    // Assign article translation
+    // Assign translation
     $translation = $article->translations->first();
     $article->translation = $translation;
     $article->title = $translation?->title ?? 'Untitled Article';
 
-    // Assign subCategory translation
+    // SubCategory
     if ($article->subCategory) {
         $subTrans = $article->subCategory->translations->first();
         $article->subCategory->translation = $subTrans;
         $article->subCategory->name = $subTrans?->name ?? 'No Subcategory Name';
 
-        // Assign category translation
         if ($article->subCategory->category) {
             $catTrans = $article->subCategory->category->translations->first();
             $article->subCategory->category->translation = $catTrans;
@@ -94,6 +95,7 @@ public function show($slug)
         }
     }
 
+    // Content
     $rawContent = $translation?->content ?? '';
     $content = $this->parseJsonContent($rawContent);
     $htmlContent = $this->convertJsonToHtml($content);

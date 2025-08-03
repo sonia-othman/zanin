@@ -13,21 +13,28 @@
             <div class="flex items-center text-sm text-gray-500 mb-6"
                  :class="isRTL ? 'justify-start flex-row-reverse' : 'justify-start'">
               <time v-if="article.created_at"
-                    :datetime="article.created_at"
-                    class="inline-block">
-                {{ formatDate(article.created_at) }}
-              </time>
-              <span v-if="article.subCategory?.translation"
-                class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
-                :class="isRTL ? 'mr-3' : 'ml-3'">
-{{ article.subCategory?.translation?.name ?? article.subCategory?.name ?? 'No Subcategory Name' }}
-              </span>
+              :datetime="article.created_at"
+              class="inline-block">
+          {{ formatDate(article.created_at) }}
+        </time>
+          
 
-              <span v-if="article.subCategory?.category?.translation"
-                class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800"
-                :class="isRTL ? 'mr-3' : 'ml-3'">
-                {{ article.subCategory?.category?.translation?.name ?? article.subCategory?.category?.name ?? 'No Category Name' }}
-              </span>
+        <div class="flex gap-2 text-sm font-medium ml-4">
+           <!-- Category -->
+                  <span v-if="article.sub_category?.category?.name"
+                        class="bg-green-100 text-green-800 px-2 py-1 rounded-full">
+                    {{ article.sub_category.category.name }}
+                  </span>
+                  <!-- Subcategory -->
+                  <span v-if="article.sub_category?.name"
+                        class="bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
+                    {{ article.sub_category.name }}
+                  </span>
+
+                 
+                </div>
+
+
 
 
 
@@ -63,6 +70,7 @@ const page = usePage();
 const article = page.props.article;
 const locale = computed(() => page.props.locale);
 const isRTL = computed(() => locale.value === 'ar' || locale.value === 'ku');
+console.log(article);
 
 const formatDate = (dateString) => {
   const date = new Date(dateString);
