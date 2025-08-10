@@ -13,122 +13,237 @@ use App\Models\ArticleTranslation;
 use Illuminate\Support\Facades\Log;
 use Tiptap\Editor;
 use Tiptap\Extensions\StarterKit;
-use App\TiptapExtensions\Image; // <-- Use your custom extension
+use App\TiptapExtensions\Image;
 
 class PublicArticleController extends Controller
 {
-// PublicArticleController.php - Optimize index method
-public function index(Request $request)
-{
-    set_time_limit(300);
-    $locale = app()->getLocale();
-    $search = $request->input('search');
+    public function index(Request $request)
+    {
+        set_time_limit(300);
+        $locale = app()->getLocale();
+        $search = $request->input('search');
 
-    // Use select to limit columns - now including excerpt
-        $articles = Article::select(['id', 'slug', 'image', 'sub_category_id', 'views', 'created_at', 'user_id'])
-        ->with([
-            'translation' => fn($q) => $q->select(['article_id', 'title', 'excerpt'])->where('language', $locale),
-            'subCategory:id,category_id',
-            'subCategory.translation' => fn($q) => $q->select(['sub_category_id', 'name'])->where('language', $locale),
-            'author:id,name' 
-        ])
-        ->when($search, function ($query) use ($search, $locale) {
-            $query->whereHas('translations', function ($q) use ($search, $locale) {
-                $q->where('language', $locale)
-                  ->where(function ($q) use ($search) {
-                      $q->where('title', 'like', '%' . $search . '%')
-                        ->orWhere('excerpt', 'like', '%' . $search . '%');
-                  });
-            });
-        })
-        ->latest()
-        ->paginate(10)
-        ->withQueryString();
+        if ($search) {
+            // Use Meilisearch when there's a search query
+            $articles = $this->searchArticles($search, $locale);
+        } else {
+            // Use regular Eloquent for listing all articles
+            $articles = Article::select(['id', 'slug', 'image', 'sub_category_id', 'views', 'created_at', 'user_id'])
+                ->with([
+                    'translation' => fn($q) => $q->select(['article_id', 'title', 'excerpt'])->where('language', $locale),
+                    'subCategory:id,category_id',
+                    'subCategory.translation' => fn($q) => $q->select(['sub_category_id', 'name'])->where('language', $locale),
+                    'author:id,name' 
+                ])
+                ->latest()
+                ->paginate(10)
+                ->withQueryString();
+        }
 
-    return Inertia::render('Articles/Index', [
-        'articles' => $articles,
-        'filters' => ['search' => $search],
-        'popularArticles' => $this->getPopularArticles($locale),
-        'locale' => $locale,
-    ]);
-}
+        return Inertia::render('Articles/Index', [
+            'articles' => $articles,
+            'filters' => ['search' => $search],
+            'popularArticles' => $this->getPopularArticles($locale),
+            'locale' => $locale,
+        ]);
+    }
 
-// Cache popular articles with better key strategy - now including excerpt
-private function getPopularArticles($locale)
-{
-    return Cache::remember("popular_articles_{$locale}", 3600, function () use ($locale) {
-        return Article::select(['id', 'slug', 'views', 'created_at'])
-            ->with(['translation' => fn($q) => $q->select(['article_id', 'title', 'excerpt'])->where('language', $locale)])
-            ->orderByDesc('views')
-            ->take(5)
-            ->get();
-    });
-}
-public function show($slug)
-{
-    $locale = app()->getLocale();
+    // Fixed method using Meilisearch
+    private function searchArticles($search, $locale)
+    {
+        $searchResults = Article::search($search)
+            ->query(fn($query) => $query->select(['id', 'slug', 'image', 'sub_category_id', 'views', 'created_at', 'user_id'])
+                ->with([
+                    'translations' => fn($q) => $q->select(['article_id', 'title', 'excerpt', 'language'])->where('language', $locale),
+                    'subCategory:id,category_id',
+                    'subCategory.translations' => fn($q) => $q->select(['sub_category_id', 'name', 'language'])->where('language', $locale),
+                    'author:id,name'
+                ]))
+            ->paginate(10)
+            ->withQueryString();
 
-    $article = Article::with([
-        'translations' => fn($q) => $q->where('language', $locale),
-        'subCategory:id,category_id', // ✅ must include id and category_id
-        'subCategory.translations' => fn($q) => $q->where('language', $locale),
-        'subCategory.category:id', // ✅ make sure category is loaded
-        'subCategory.category.translations' => fn($q) => $q->where('language', $locale),
-        'images',
-    ])->where('slug', $slug)->firstOrFail();
+        // Transform the collection to add the translation attribute for consistency
+        $searchResults->getCollection()->transform(function ($article) use ($locale) {
+            $translation = $article->translations->where('language', $locale)->first();
+            $article->translation = $translation;
+            
+            // Add subcategory translation for consistency
+            if ($article->subCategory && $article->subCategory->translations) {
+                $subTranslation = $article->subCategory->translations->where('language', $locale)->first();
+                $article->subCategory->translation = $subTranslation;
+            }
+            
+            return $article;
+        });
 
-    // Assign translation
-    $translation = $article->translations->first();
-    $article->translation = $translation;
-    $article->title = $translation?->title ?? 'Untitled Article';
+        return $searchResults;
+    }
 
-    // SubCategory
-    if ($article->subCategory) {
-        $subTrans = $article->subCategory->translations->first();
-        $article->subCategory->translation = $subTrans;
-        $article->subCategory->name = $subTrans?->name ?? 'No Subcategory Name';
+    // Enhanced search method using Meilisearch
+    public function search(Request $request)
+    {
+        $locale = app()->getLocale();
+        $search = $request->input('q');
 
-        if ($article->subCategory->category) {
-            $catTrans = $article->subCategory->category->translations->first();
-            $article->subCategory->category->translation = $catTrans;
-            $article->subCategory->category->name = $catTrans?->name ?? 'No Category Name';
+        if (empty($search)) {
+            return redirect()->route('home');
+        }
+
+        // Use Meilisearch for the search
+        $articles = Article::search($search)
+            ->query(fn($query) => $query->with([
+                'translations' => fn($q) => $q->where('language', $locale),
+                'subCategory:id,category_id',
+                'subCategory.translations' => fn($q) => $q->where('language', $locale),
+                'author:id,name'
+            ]))
+            ->paginate(10);
+
+        // Transform search results to add translation data
+        $articles->getCollection()->transform(function ($article) use ($locale) {
+            $translation = $article->translations->where('language', $locale)->first();
+            
+            // Set the translation attribute for consistency with other methods
+            $article->translation = $translation;
+            $article->title = $translation?->title ?? 'Untitled Article';
+            $article->excerpt = $translation?->excerpt ?? '';
+            
+            // Handle subcategory translations
+            if ($article->subCategory && $article->subCategory->translations) {
+                $subTranslation = $article->subCategory->translations->where('language', $locale)->first();
+                $article->subCategory->translation = $subTranslation;
+                $article->subCategory->name = $subTranslation?->name ?? 'No Subcategory Name';
+            }
+            
+            return $article;
+        });
+
+        return Inertia::render('Articles/SearchResults', [
+            'articles' => $articles,
+            'search' => $search,
+            'locale' => $locale,
+        ]);
+    }
+
+    // Enhanced autocomplete using Meilisearch
+    public function autocomplete(Request $request)
+    {
+        $locale = app()->getLocale();
+        $search = $request->input('q');
+
+        if (strlen($search) < 2) {
+            return response()->json([]);
+        }
+
+        try {
+            // Use Meilisearch for fast autocomplete
+            $results = Article::search($search)
+                ->query(fn($query) => $query->with([
+                    'translations' => fn($q) => $q->select(['article_id', 'title', 'language'])->where('language', $locale)
+                ]))
+                ->take(5)
+                ->get();
+
+            $suggestions = $results->mapWithKeys(function ($article) use ($locale) {
+                $translation = $article->translations->where('language', $locale)->first();
+                $title = $translation?->title ?? 'Untitled';
+                return [$article->slug => $title];
+            })->filter()->toArray(); // Filter out empty titles
+
+            return response()->json($suggestions);
+            
+        } catch (\Exception $e) {
+            Log::error('Autocomplete search error: ' . $e->getMessage());
+            
+            // Fallback to database search
+            $suggestions = ArticleTranslation::where('language', $locale)
+                ->where(function ($q) use ($search) {
+                    $q->where('title', 'like', '%' . $search . '%')
+                      ->orWhere('excerpt', 'like', '%' . $search . '%');
+                })
+                ->take(5)
+                ->get()
+                ->mapWithKeys(function ($item) {
+                    return [$item->article->slug => $item->title];
+                })
+                ->toArray();
+
+            return response()->json($suggestions);
         }
     }
 
-    // Content
-    $rawContent = $translation?->content ?? '';
-    $content = $this->parseJsonContent($rawContent);
-    $htmlContent = $this->convertJsonToHtml($content);
-    $article->content_html = $htmlContent;
+    // Cache popular articles - unchanged
+    private function getPopularArticles($locale)
+    {
+        return Cache::remember("popular_articles_{$locale}", 3600, function () use ($locale) {
+            return Article::select(['id', 'slug', 'views', 'created_at'])
+                ->with(['translation' => fn($q) => $q->select(['article_id', 'title', 'excerpt'])->where('language', $locale)])
+                ->orderByDesc('views')
+                ->take(5)
+                ->get();
+        });
+    }
 
-    $article->increment('views');
+    public function show($slug)
+    {
+        $locale = app()->getLocale();
 
-    return Inertia::render('Articles/Show', [
-        'article' => $article->toArray(),
-        'locale' => $locale,
-    ]);
-}
+        $article = Article::with([
+            'translations' => fn($q) => $q->where('language', $locale),
+            'subCategory:id,category_id',
+            'subCategory.translations' => fn($q) => $q->where('language', $locale),
+            'subCategory.category:id',
+            'subCategory.category.translations' => fn($q) => $q->where('language', $locale),
+            'images',
+        ])->where('slug', $slug)->firstOrFail();
 
+        // Assign translation
+        $translation = $article->translations->first();
+        $article->translation = $translation;
+        $article->title = $translation?->title ?? 'Untitled Article';
 
+        // SubCategory
+        if ($article->subCategory) {
+            $subTrans = $article->subCategory->translations->first();
+            $article->subCategory->translation = $subTrans;
+            $article->subCategory->name = $subTrans?->name ?? 'No Subcategory Name';
 
+            if ($article->subCategory->category) {
+                $catTrans = $article->subCategory->category->translations->first();
+                $article->subCategory->category->translation = $catTrans;
+                $article->subCategory->category->name = $catTrans?->name ?? 'No Category Name';
+            }
+        }
 
+        // Content
+        $rawContent = $translation?->content ?? '';
+        $content = $this->parseJsonContent($rawContent);
+        $htmlContent = $this->convertJsonToHtml($content);
+        $article->content_html = $htmlContent;
+
+        $article->increment('views');
+
+        return Inertia::render('Articles/Show', [
+            'article' => $article->toArray(),
+            'locale' => $locale,
+        ]);
+    }
+
+    // All your existing content parsing methods remain the same...
     private function parseJsonContent($rawContent)
     {
         if (empty($rawContent)) {
             return null;
         }
 
-        // If it's already an array, return it
         if (is_array($rawContent)) {
             return $rawContent;
         }
 
-        // If it's an object, convert to array
         if (is_object($rawContent)) {
             return json_decode(json_encode($rawContent), true);
         }
 
-        // If it's a string, try to decode it
         if (is_string($rawContent)) {
             $decoded = json_decode($rawContent, true);
             if (json_last_error() === JSON_ERROR_NONE) {
@@ -262,7 +377,6 @@ public function show($slug)
             case 'text':
                 $text = $element['text'] ?? '';
                 
-                // Apply text formatting marks
                 if (isset($element['marks'])) {
                     foreach ($element['marks'] as $mark) {
                         switch ($mark['type']) {
@@ -322,11 +436,11 @@ public function show($slug)
         $style = $attrs['style'] ?? '';
 
         if (empty($src)) {
-            \Log::warning('Image element has no src attribute', ['attrs' => $attrs]);
+            Log::warning('Image element has no src attribute', ['attrs' => $attrs]);
             return '';
         }
 
-        \Log::info('Rendering image', ['src' => $src, 'alt' => $alt, 'attrs' => $attrs]);
+        Log::info('Rendering image', ['src' => $src, 'alt' => $alt, 'attrs' => $attrs]);
 
         $attributes = [
             'src="' . htmlspecialchars($src) . '"',
@@ -353,71 +467,15 @@ public function show($slug)
             $attributes[] = 'style="' . htmlspecialchars($style) . '"';
         }
 
-        // Add loading="lazy" for better performance
         if (isset($attrs['lazy']) && $attrs['lazy']) {
             $attributes[] = 'loading="lazy"';
         }
 
         $html = '<img ' . implode(' ', $attributes) . '>';
         
-        \Log::info('Generated image HTML', ['html' => $html]);
+        Log::info('Generated image HTML', ['html' => $html]);
         
         return $html;
-    }
-
-    public function search(Request $request)
-    {
-        $locale = app()->getLocale();
-        $search = $request->input('q');
-
-        if (empty($search)) {
-            return redirect()->route('home');
-        }
-
-        $articles = Article::with(['translations' => fn($q) => $q->where('language', $locale)])
-            ->whereHas('translations', function ($q) use ($search, $locale) {
-                $q->where('language', $locale)
-                  ->where(function ($q) use ($search) {
-                      $q->where('title', 'like', '%' . $search . '%')
-                        ->orWhere('excerpt', 'like', '%' . $search . '%')
-                        ->orWhere('content', 'like', '%' . $search . '%');
-                  });
-            })
-            ->paginate(10);
-
-        // Transform search results
-        $articles->getCollection()->transform(function ($article) use ($locale) {
-            $translation = $article->translations->where('language', $locale)->first();
-            $article->translation = $translation;
-            $article->title = $translation?->title ?? 'Untitled Article';
-            $article->excerpt = $translation?->excerpt ?? '';
-            return $article;
-        });
-
-        return Inertia::render('Articles/SearchResults', [
-            'articles' => $articles,
-            'search' => $search,
-            'locale' => $locale,
-        ]);
-    }
-
-    public function autocomplete(Request $request)
-    {
-        $locale = app()->getLocale();
-        $search = $request->input('q');
-
-        $suggestions = ArticleTranslation::where('language', $locale)
-            ->where(function ($q) use ($search) {
-                $q->where('title', 'like', '%' . $search . '%')
-                  ->orWhere('excerpt', 'like', '%' . $search . '%');
-            })
-            ->take(5)
-            ->get()
-            ->mapWithKeys(function ($item) {
-                return [$item->article->slug => $item->title];
-            });
-
-        return response()->json($suggestions);
     }
 
     private function processInlineImages($content)

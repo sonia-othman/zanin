@@ -11,7 +11,7 @@ module.exports = {
   theme: {
     extend: {
       fontFamily: {
-        sans: ['Roboto', 'sans-serif'], // Changed from Open Sans to Roboto
+        sans: ['Roboto', 'sans-serif'], 
         rabar: ['Rabar_021', 'sans-serif'],
       },
     },
