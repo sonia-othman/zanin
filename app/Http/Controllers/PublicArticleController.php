@@ -174,15 +174,16 @@ class PublicArticleController extends Controller
 
     // Cache popular articles - unchanged
     private function getPopularArticles($locale)
-    {
-        return Cache::remember("popular_articles_{$locale}", 3600, function () use ($locale) {
-            return Article::select(['id', 'slug', 'views', 'created_at'])
-                ->with(['translation' => fn($q) => $q->select(['article_id', 'title', 'excerpt'])->where('language', $locale)])
-                ->orderByDesc('views')
-                ->take(5)
-                ->get();
-        });
-    }
+{
+    return Cache::remember("popular_articles_{$locale}", 3600, function () use ($locale) {
+        return Article::select(['id', 'slug', 'image', 'views', 'created_at', 'user_id'])
+            ->with(['translation' => fn($q) => $q->select(['article_id', 'title', 'excerpt'])->where('language', $locale)])
+            ->orderByDesc('views')
+            ->take(5)
+            ->get();
+    });
+}
+
 
     public function show($slug)
     {

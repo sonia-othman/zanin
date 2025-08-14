@@ -3,12 +3,21 @@
     :href="$route('articles.show', { slug: article.slug })"
     class="group bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-lg transition-all duration-300 hover:scale-[1.02] flex flex-col h-full min-h-[300px]"
   >
-    <!-- Image Placeholder -->
-    <div class="h-48 bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
-      <svg class="w-12 h-12 text-gray-400" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true" focusable="false">
-        <path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd" />
-      </svg>
-    </div>
+   <!-- Article Image -->
+<div class="h-48 overflow-hidden">
+  <img
+    v-if="article.image"
+    :src="`/storage/${article.image}`"
+    alt="Article Image"
+    class="w-full h-full object-contain bg-white transition-transform duration-300 group-hover:scale-105"
+  >
+  <div v-else class="h-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
+    <svg class="w-12 h-12 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+      <path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd" />
+    </svg>
+  </div>
+</div>
+
 
     <!-- Content -->
     <div class="p-6 flex flex-col flex-grow">
